@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Minus,
@@ -19,8 +19,21 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
   // Form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryType, setDeliveryType] = useState("LOCAL"); // 'LOCAL' | 'LLEVAR'
+  const [deliveryType, setDeliveryType] = useState("LOCAL"); // 'LOCAL' | 'LLEVAR' | 'DELIVERY'
+  const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Cargar datos guardados del cliente al abrir el modal (Fricción Cero)
+  useEffect(() => {
+    if (isOpen) {
+      const savedName = localStorage.getItem("pad_customer_name");
+      const savedPhone = localStorage.getItem("pad_customer_phone");
+      const savedAddress = localStorage.getItem("pad_customer_address");
+      if (savedName) setName(savedName);
+      if (savedPhone) setPhone(savedPhone);
+      if (savedAddress) setAddress(savedAddress);
+    }
+  }, [isOpen]);
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -33,11 +46,21 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
 
     setIsSubmitting(true);
     try {
+      // Guardar datos para próxima compra
+      localStorage.setItem("pad_customer_name", name.trim());
+      localStorage.setItem("pad_customer_phone", phone.trim());
+      if (deliveryType === 'DELIVERY') {
+        localStorage.setItem("pad_customer_address", address.trim());
+      }
+
+      let formattedNotes = deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : deliveryType === 'DELIVERY' ? `[DELIVERY] Dir: ${address.trim()}` : '[EN EL LOCAL]';
+      if (notes.trim()) formattedNotes += ` - Notas: ${notes.trim()}`;
+
       const orderPayload = {
         tenant_id: tenantId,
         customer_name: name.trim(),
         customer_phone: phone.trim(),
-        customer_notes: `${deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : '[EN EL LOCAL]'} ${notes.trim()}`.trim(),
+        customer_notes: formattedNotes,
         items: cart.map(item => ({
           ...item,
           id: item.local_id || item.id // Enviar el local_id a la cocina si existe
@@ -57,7 +80,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
       // Optionally close after a few seconds
       setTimeout(() => {
         onClose();
-        setView("cart"); // reset for next time
+        setTimeout(() => setView("cart"), 300); // reset after transition
       }, 5000);
     } catch (error) {
       console.error("Error enviando orden:", error);
@@ -70,29 +93,35 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className={`fixed inset-0 z-50 overflow-hidden ${!isOpen ? 'pointer-events-none' : ''}`}>
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        onClick={() => { if (!isSubmitting) onClose(); }}
       />
 
-      {/* Panel */}
+      {/* Panel (Bottom Sheet on Mobile, Drawer on Desktop) */}
       <div
-        className={`absolute top-0 right-0 h-full w-full max-w-md bg-white dark:bg-slate-950 shadow-2xl flex flex-col transition-transform transform ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute sm:top-0 bottom-0 sm:right-0 w-full sm:w-[450px] sm:max-w-md bg-white sm:h-full max-h-[92vh] sm:max-h-full rounded-t-[32px] sm:rounded-none shadow-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? "translate-y-0 sm:translate-x-0" : "translate-y-full sm:translate-x-full"
+          }`}
       >
+        {/* Mobile Drag Handle */}
+        <div className="w-full h-6 flex items-center justify-center sm:hidden shrink-0" onTouchStart={onClose}>
+          <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
             {view === "success"
               ? "¡Orden Enviada!"
               : view === "checkout"
-                ? "Finalizar Pedido"
-                : "Tu Orden"}
+                ? "Resumen y Envío"
+                : "Tu Carrito"}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+            className="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
           >
             <X size={24} />
           </button>
@@ -218,13 +247,12 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
               onSubmit={handleSubmitOrder}
               className="space-y-6"
             >
-              <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-[20px] border border-red-100 dark:border-red-900/20">
-                <h3 className="font-bold text-red-800 dark:text-red-400 mb-1">
-                  ¡Casi listo!
+              <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                <h3 className="font-bold text-emerald-800 mb-1">
+                  Casi listo
                 </h3>
-                <p className="text-sm text-red-600/80 dark:text-red-400/80 leading-relaxed">
-                  Déjanos tus datos para enviarte el total en Bolívares por
-                  WhatsApp y procesar tu pedido inmediatamente.
+                <p className="text-sm text-emerald-700/80 leading-relaxed">
+                  Confirma tus datos para enviarte el total en Bolívares por WhatsApp.
                 </p>
               </div>
 
@@ -257,39 +285,52 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    ¿Para Llevar o Comer Aquí?
+                  <label className="block text-sm font-bold text-slate-700 mb-2">
+                    Método de Entrega
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryType("LLEVAR")}
-                      className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 transition-all ${deliveryType === "LLEVAR"
-                        ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-                        : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:border-slate-200"
-                        }`}
-                    >
-                      <Car
-                        size={24}
-                        className={
-                          deliveryType === "LLEVAR" ? "animate-bounce" : ""
-                        }
-                      />
-                      <span className="font-bold text-sm">Para Llevar</span>
-                    </button>
+                  <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
                     <button
                       type="button"
                       onClick={() => setDeliveryType("LOCAL")}
-                      className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border-2 transition-all ${deliveryType === "LOCAL"
-                        ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-                        : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 hover:border-slate-200"
+                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LOCAL" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
                         }`}
                     >
-                      <UtensilsCrossed size={24} />
-                      <span className="font-bold text-sm">En el Local</span>
+                      Mesa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType("LLEVAR")}
+                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LLEVAR" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
+                        }`}
+                    >
+                      Llevar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType("DELIVERY")}
+                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "DELIVERY" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"
+                        }`}
+                    >
+                      Delivery
                     </button>
                   </div>
                 </div>
+
+                {deliveryType === "DELIVERY" && (
+                  <div className="animate-reveal">
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Dirección de Entrega
+                    </label>
+                    <textarea
+                      required
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Urb. El Pinar, Calle 4, Casa #12..."
+                      rows="2"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
@@ -300,7 +341,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Ej. Sin cebolla, extra salsa..."
                     rows="2"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-800 dark:text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all resize-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all resize-none shadow-sm"
                   />
                 </div>
               </div>
@@ -310,10 +351,10 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
 
         {/* Footer / Actions */}
         {view !== "success" && cart.length > 0 && (
-          <div className="p-6 bg-white dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] z-10">
+          <div className="p-6 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] z-10 pb-8 sm:pb-6">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-slate-500 font-medium">Total Estimado</span>
-              <span className="text-2xl font-black text-slate-800 dark:text-white">
+              <span className="text-slate-500 font-bold">Total a pagar</span>
+              <span className="text-3xl font-black text-slate-800">
                 ${cartTotal.toFixed(2)}
               </span>
             </div>
@@ -321,36 +362,35 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
             {view === "cart" ? (
               <button
                 onClick={handleCheckout}
-                className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-black text-lg rounded-xl shadow-xl shadow-red-500/25 active:scale-[0.98] transition-all"
+                className="w-full flex items-center justify-center gap-2 py-4 bg-slate-900 hover:bg-black text-white font-black text-lg rounded-2xl shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all"
               >
-                Procesar Pedido
+                Continuar al Pago
                 <ArrowRight size={20} />
               </button>
             ) : (
-              <button
-                type="submit"
-                form="checkout-form"
-                disabled={isSubmitting || !name || !phone}
-                className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-black text-lg rounded-xl shadow-xl shadow-green-500/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>Enviar al Restaurante</>
-                )}
-              </button>
-            )}
-
-            {view === "checkout" && (
-              <button
-                onClick={() => setView("cart")}
-                className="mt-4 w-full py-3 text-slate-500 font-bold hover:text-slate-800 dark:hover:text-white transition-colors"
-              >
-                Volver al Carrito
-              </button>
+              <div className="space-y-3">
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  disabled={isSubmitting || !name || !phone || (deliveryType === 'DELIVERY' && !address)}
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>Confirmar Pedido</>
+                  )}
+                </button>
+                <button
+                  onClick={() => setView("cart")}
+                  className="w-full py-3 text-slate-500 font-bold hover:text-slate-800 transition-colors bg-slate-50 rounded-xl"
+                >
+                  Modificar Carrito
+                </button>
+              </div>
             )}
           </div>
         )}

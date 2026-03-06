@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
-import { ShoppingCart, Flame, UtensilsCrossed, Store } from "lucide-react";
+import { ShoppingCart, Flame, UtensilsCrossed, Store, Search, ChevronLeft } from "lucide-react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
 import ProductCard from "./components/ProductCard";
@@ -9,6 +9,9 @@ import BurgerHero from "./components/BurgerHero";
 
 function StorePage() {
   const { slug } = useParams();
+  const [activeCategory, setActiveCategory] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const categoryRefs = useRef({});
 
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -34,8 +37,13 @@ function StorePage() {
     );
   }
 
+  const filteredCatalog = catalog.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   // Group products by category
-  const categoriesMap = catalog.reduce((acc, curr) => {
+  const categoriesMap = filteredCatalog.reduce((acc, curr) => {
     const cat = curr.category || "Otros";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(curr);
@@ -44,86 +52,158 @@ function StorePage() {
 
   const categoryOrder = Object.keys(categoriesMap).sort();
 
+  // Scroll Spy via Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Encontrar la entrada más visible
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length > 0) {
+          // Si hay varias, tomar la primera
+          setActiveCategory(visibleEntries[0].target.id);
+        }
+      },
+      { rootMargin: "-120px 0px -60% 0px", threshold: 0.1 }
+    );
+
+    Object.values(categoryRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, [categoryOrder.length]); // Re-run when categories change
+
+  const scrollToCategory = (categoryId) => {
+    setActiveCategory(categoryId);
+    const element = document.getElementById(categoryId);
+    if (element) {
+      const headerOffset = 130; // Altura del sticky header + tab bar
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300">
       {/* ─── HEADER PREMIUM ─── */}
-      <header
-        className="sticky top-0 z-40 bg-white shadow-sm"
-      >
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-[0_4px_30px_rgb(0,0,0,0.03)] border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo + Business Name */}
-            <div className="flex-shrink-0 flex items-center gap-3">
-              <img
-                src="/logo_principal.png"
-                alt={config.business_name}
-                className="h-10 sm:h-12 w-auto object-contain transition-all duration-500 hover:scale-105"
-              />
-              <span className="text-sm font-black text-slate-700 hidden sm:inline">
-                {config.business_name}
-              </span>
-            </div>
+          <div className="flex flex-col">
+            {/* Top Bar: Logo & Cart */}
+            <div className="flex items-center justify-between h-16 sm:h-20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 rounded-full flex items-center justify-center overflow-hidden border border-slate-200">
+                  <img
+                    src="/logo_principal.png"
+                    alt={config.business_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base sm:text-lg font-black text-slate-800 leading-tight">
+                    {config.business_name || "Cargando..."}
+                  </span>
+                  <span className="text-[10px] sm:text-xs font-bold text-emerald-500 uppercase flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    Abierto
+                  </span>
+                </div>
+              </div>
 
-            {/* Cart Button */}
-            <div className="flex items-center gap-3">
+              {/* Cart Button */}
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative p-2.5 text-slate-700 dark:text-slate-300 hover:text-red-500 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 shadow-sm transition-all"
+                className="relative p-2.5 sm:p-3 text-slate-700 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-full active:scale-95 transition-all border border-slate-100"
               >
                 <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-[10px] font-black leading-none text-white bg-red-500 rounded-full shadow-lg shadow-red-500/40 border-2 border-white dark:border-slate-900">
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[11px] font-black text-white bg-red-500 rounded-full shadow-md border-2 border-white">
                     {cartCount}
                   </span>
                 )}
               </button>
             </div>
+
+            {/* Sticky Categories Bar */}
+            {!loading && !notFound && categoryOrder.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                {categoryOrder.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => scrollToCategory(`category-${cat}`)}
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeCategory === `category-${cat}`
+                        ? "bg-slate-900 text-white shadow-md transform scale-105"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Antigravity Flow Hero */}
-      <BurgerHero businessName={config.business_name} />
-
       {/* ─── MAIN CONTENT ─── */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-12 lg:-mt-16 relative z-10 pb-24">
-        <div className="bg-white dark:bg-slate-900 rounded-[32px] sm:rounded-[40px] shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-5 sm:p-8 lg:p-10 min-h-[400px]">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
+        {/* Search Bar */}
+        <div className="mb-8 relative max-w-full">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search size={18} className="text-slate-400" />
+          </div>
+          <input
+            type="text"
+            className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-red-500 focus:border-red-500 shadow-sm transition-shadow placeholder-slate-400"
+            placeholder="¿Qué se te antoja hoy?"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="w-full min-h-[400px]">
           {/* Menu Catalog */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-600">
-              <div className="w-10 h-10 rounded-full border-4 border-slate-200 dark:border-slate-800 border-t-red-500 animate-spin mb-4" />
-              <p className="font-bold">Cargando menú...</p>
+            <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+              <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-red-500 animate-spin mb-4" />
+              <p className="font-bold">Cargando menú delicioso...</p>
             </div>
           ) : catalog.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
-                <UtensilsCrossed
-                  size={40}
-                  className="text-slate-300 dark:text-slate-600"
-                />
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                <UtensilsCrossed size={40} className="text-slate-300" />
               </div>
-              <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300 mb-2">
-                Aún no hay platos aquí
-              </h3>
+              <h3 className="text-xl font-bold text-slate-700 mb-2">Menú no disponible</h3>
               <p className="text-slate-500 max-w-xs">
-                Nuestro chef está preparando el menú, por favor vuelve más
-                tarde.
+                Este negocio aún no ha publicado sus productos.
               </p>
             </div>
           ) : (
-            <div className="space-y-12">
+            <div className="space-y-10 sm:space-y-14">
+              {categoryOrder.length === 0 && searchQuery && (
+                <div className="text-center py-10">
+                  <p className="text-slate-500 font-medium">No se encontraron productos para "{searchQuery}"</p>
+                </div>
+              )}
               {categoryOrder.map((category) => (
-                <section key={category}>
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white capitalize mb-6 flex items-center gap-3">
-                    <span className="w-5 h-1 bg-red-500 rounded-full block" />
+                <section
+                  key={category}
+                  id={`category-${category}`}
+                  ref={(el) => (categoryRefs.current[`category-${category}`] = el)}
+                  className="scroll-mt-36" // Offset para el sticky header
+                >
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-6 flex items-center">
                     {category}
                   </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {categoriesMap[category].map((product) => (
                       <ProductCard
                         key={product.id}
                         product={product}
                         onAdd={(p) => cartHooks.addToCart(p)}
+                        cartItems={cartHooks.cart} // Necesario para mostrar contador [- 1 +]
+                        onUpdateQty={cartHooks.updateQty}
                       />
                     ))}
                   </div>
