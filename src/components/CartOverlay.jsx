@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
-export default function CartOverlay({ cartHooks, isOpen, onClose }) {
+export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
   const { cart, removeFromCart, updateQty, clearCart, cartTotal, cartCount } =
     cartHooks;
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
@@ -34,6 +34,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose }) {
     setIsSubmitting(true);
     try {
       const orderPayload = {
+        tenant_id: tenantId,
         customer_name: name.trim(),
         customer_phone: phone.trim(),
         customer_notes: `${deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : '[EN EL LOCAL]'} ${notes.trim()}`.trim(),

@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { ShoppingCart, Flame, UtensilsCrossed } from "lucide-react";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
+import { ShoppingCart, Flame, UtensilsCrossed, Store } from "lucide-react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
 import ProductCard from "./components/ProductCard";
 import CartOverlay from "./components/CartOverlay";
 import BurgerHero from "./components/BurgerHero";
 
-function MainLayout() {
+function StorePage() {
+  const { slug } = useParams();
 
   useEffect(() => {
-    // Eliminar la clase dark y setear light en localStorage por defecto
     document.documentElement.classList.remove("dark");
     localStorage.setItem("theme", "light");
   }, []);
 
-  const { catalog, config, loading } = useCatalog();
+  const { catalog, config, loading, notFound } = useCatalog(slug);
   const cartHooks = useCart();
   const { cartCount, isCartOpen, setIsCartOpen } = cartHooks;
+
+  // 404 — Negocio no encontrado
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center">
+        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+          <Store size={48} className="text-slate-300" />
+        </div>
+        <h1 className="text-2xl font-black text-slate-700 mb-2">Negocio no encontrado</h1>
+        <p className="text-slate-500 max-w-xs">
+          El enlace que usaste no corresponde a ningún negocio registrado. Verifica el link o contacta al vendedor.
+        </p>
+      </div>
+    );
+  }
 
   // Group products by category
   const categoriesMap = catalog.reduce((acc, curr) => {
@@ -29,8 +44,6 @@ function MainLayout() {
 
   const categoryOrder = Object.keys(categoriesMap).sort();
 
-
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300">
       {/* ─── HEADER PREMIUM ─── */}
@@ -39,13 +52,16 @@ function MainLayout() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
+            {/* Logo + Business Name */}
+            <div className="flex-shrink-0 flex items-center gap-3">
               <img
                 src="/logo_principal.png"
-                alt="Precios Al Día"
+                alt={config.business_name}
                 className="h-10 sm:h-12 w-auto object-contain transition-all duration-500 hover:scale-105"
               />
+              <span className="text-sm font-black text-slate-700 hidden sm:inline">
+                {config.business_name}
+              </span>
             </div>
 
             {/* Cart Button */}
@@ -67,7 +83,7 @@ function MainLayout() {
       </header>
 
       {/* Antigravity Flow Hero */}
-      <BurgerHero />
+      <BurgerHero businessName={config.business_name} />
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-12 lg:-mt-16 relative z-10 pb-24">
@@ -122,6 +138,7 @@ function MainLayout() {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         cartHooks={cartHooks}
+        tenantId={config.tenant_id}
       />
 
       {/* Floating Action Button for Mobile Cart */}
@@ -144,7 +161,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainLayout />} />
+        <Route path="/:slug" element={<StorePage />} />
+        <Route path="/" element={
+          <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center">
+            <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <Store size={48} className="text-red-300" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-700 mb-2">Precios Al Día</h1>
+            <p className="text-slate-500 max-w-xs">
+              Para ver el menú de un negocio, necesitas un enlace directo del vendedor.
+            </p>
+          </div>
+        } />
       </Routes>
     </Router>
   );
