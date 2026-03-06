@@ -88,6 +88,14 @@ export function useCart() {
     );
   };
 
+  const updateNote = (cartId, note) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.cartId === cartId ? { ...item, note } : item
+      )
+    );
+  };
+
   const clearCart = () => setCart([]);
 
   const cartTotal = useMemo(() => cart.reduce(
@@ -102,6 +110,7 @@ export function useCart() {
     addToCart,
     removeFromCart,
     updateQty,
+    updateNote,
     clearCart,
     cartTotal,
     cartCount,

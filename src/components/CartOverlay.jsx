@@ -11,10 +11,11 @@ import {
 import { supabase } from "../utils/supabase";
 
 export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
-  const { cart, removeFromCart, updateQty, clearCart, cartTotal, cartCount } =
+  const { cart, removeFromCart, updateQty, updateNote, clearCart, cartTotal, cartCount } =
     cartHooks;
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState({}); // { [cartId]: boolean }
 
   // Form state
   const [name, setName] = useState("");
@@ -204,13 +205,36 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
                           + {item.selectedExtras.map((e) => e.name).join(", ")}
                         </p>
                       )}
-                      {item.note && (
-                        <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-1 flex gap-1 line-clamp-1">
-                          <span className="shrink-0 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">
-                            Nota
-                          </span>
-                          {item.note}
-                        </p>
+
+                      {/* ── Per-item Note ── */}
+                      {expandedNotes[item.cartId] ? (
+                        <div className="mt-2">
+                          <textarea
+                            autoFocus
+                            value={item.note || ""}
+                            onChange={(e) => updateNote(item.cartId, e.target.value)}
+                            onBlur={() => setExpandedNotes(prev => ({ ...prev, [item.cartId]: false }))}
+                            placeholder="Ej: sin cebolla, poca sal, extra salsa..."
+                            rows={2}
+                            className="w-full text-xs bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-amber-900 placeholder-amber-400 focus:outline-none focus:border-amber-400 resize-none"
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setExpandedNotes(prev => ({ ...prev, [item.cartId]: true }))}
+                          className="mt-1.5 flex items-center gap-1.5 group"
+                        >
+                          {item.note ? (
+                            <span className="text-[11px] text-amber-600 flex gap-1 items-center">
+                              <span className="bg-amber-100 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0">Nota</span>
+                              <span className="line-clamp-1">{item.note}</span>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 group-hover:text-amber-500 transition-colors flex items-center gap-1">
+                              <span>✏️</span> Añadir instrucciones
+                            </span>
+                          )}
+                        </button>
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-3">
