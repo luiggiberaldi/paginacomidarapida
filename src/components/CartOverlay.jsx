@@ -38,7 +38,10 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
         customer_name: name.trim(),
         customer_phone: phone.trim(),
         customer_notes: `${deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : '[EN EL LOCAL]'} ${notes.trim()}`.trim(),
-        items: cart,
+        items: cart.map(item => ({
+          ...item,
+          id: item.local_id || item.id // Enviar el local_id a la cocina si existe
+        })),
         total_usd: cartTotal,
         status: "pending",
       };
