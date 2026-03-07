@@ -9,24 +9,32 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   const cartItem = cartItems.find((item) => item.id === product.id);
   const quantityInCart = cartItem ? cartItem.qty : 0;
 
-  const handleAddClick = () => {
+  const handleAddClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     onAdd(product);
   };
 
-  const handleIncrease = () => {
+  const handleIncrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (cartItem) {
-      onUpdateQty(cartItem.cartId, 1);
+      const targetId = cartItem.cartId || cartItem.id;
+      onUpdateQty(targetId, 1);
     } else {
       onAdd(product);
     }
   };
 
-  const handleDecrease = () => {
+  const handleDecrease = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (cartItem) {
+      const targetId = cartItem.cartId || cartItem.id;
       if (cartItem.qty <= 1 && onRemove) {
-        onRemove(cartItem.cartId);
+        onRemove(targetId);
       } else {
-        onUpdateQty(cartItem.cartId, -1);
+        onUpdateQty(targetId, -1);
       }
     }
   };
