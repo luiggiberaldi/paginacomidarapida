@@ -74,12 +74,12 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         )}
 
         {/* Actions */}
-        <div className="mt-auto pt-4 relative">
+        <div className="mt-auto relative z-10 w-full pt-2">
           {quantityInCart > 0 ? (
-            <div className="flex items-center justify-between w-full bg-slate-100 rounded-2xl p-1 shadow-inner border border-slate-200/50 overflow-hidden">
+            <div className="flex items-center justify-between w-full bg-slate-100 rounded-2xl p-1 shadow-inner border border-slate-200/50">
               <button
                 onClick={handleDecrease}
-                className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 border border-slate-200"
+                className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 border border-slate-200 shrink-0"
               >
                 <Minus size={18} />
               </button>
@@ -87,11 +87,11 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
                 <span className="font-black text-lg text-slate-800 w-8 tabular-nums">
                   {quantityInCart}
                 </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">en orden</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 hidden sm:inline-block">en orden</span>
               </div>
               <button
                 onClick={handleIncrease}
-                className="w-10 h-10 flex items-center justify-center text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-md shadow-red-500/30 transition-all active:scale-95"
+                className="w-10 h-10 flex items-center justify-center text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-md shadow-red-500/30 transition-all active:scale-95 shrink-0"
               >
                 <Plus size={18} />
               </button>
