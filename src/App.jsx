@@ -50,7 +50,27 @@ function StorePage() {
     return acc;
   }, {});
 
-  const categoryOrder = Object.keys(categoriesMap).sort();
+  // Default PWA category ordering
+  const PWA_CATEGORY_ORDER = [
+    "perros",
+    "hamburguesas",
+    "pepitos",
+    "arepas",
+    "raciones",
+    "combos",
+    "bebidas",
+    "postres",
+    "extras"
+  ];
+
+  const categoryOrder = Object.keys(categoriesMap).sort((a, b) => {
+    const idxA = PWA_CATEGORY_ORDER.indexOf(a.toLowerCase());
+    const idxB = PWA_CATEGORY_ORDER.indexOf(b.toLowerCase());
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
   // Scroll Spy via Intersection Observer
   useEffect(() => {
@@ -101,7 +121,7 @@ function StorePage() {
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-black text-slate-800 leading-tight">
+                  <span className="text-base sm:text-lg font-black text-slate-800 leading-tight capitalize">
                     {config.business_name || "Cargando..."}
                   </span>
                   <span className="text-[10px] sm:text-xs font-bold text-emerald-500 uppercase flex items-center gap-1">
@@ -132,7 +152,7 @@ function StorePage() {
                   <button
                     key={cat}
                     onClick={() => scrollToCategory(`category-${cat}`)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeCategory === `category-${cat}`
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 capitalize ${activeCategory === `category-${cat}`
                       ? "bg-slate-900 text-white shadow-md transform scale-105"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
@@ -193,7 +213,7 @@ function StorePage() {
                   ref={(el) => (categoryRefs.current[`category-${category}`] = el)}
                   className="scroll-mt-36" // Offset para el sticky header
                 >
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-6 flex items-center">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-6 flex items-center capitalize">
                     {category}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -202,9 +222,10 @@ function StorePage() {
                         key={product.id}
                         product={product}
                         onAdd={(p) => cartHooks.addToCart(p)}
-                        cartItems={cartHooks.cart} // Necesario para mostrar contador [- 1 +]
+                        cartItems={cartHooks.cart}
                         onUpdateQty={cartHooks.updateQty}
                         onRemove={cartHooks.removeFromCart}
+                        exchangeRate={config.exchange_rate || 1}
                       />
                     ))}
                   </div>

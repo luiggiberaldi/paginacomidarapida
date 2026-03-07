@@ -51,10 +51,15 @@ export function useCart() {
         return newCart;
       }
 
+      // Safe ID generation for non-HTTPS local networks
+      const safeId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+
       return [
         ...prev,
         {
-          cartId: crypto.randomUUID(),
+          cartId: safeId,
           id: product.id,
           name: product.name,
           priceUsd: unitPrice,

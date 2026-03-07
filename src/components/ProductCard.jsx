@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Minus, Clock, Info } from "lucide-react";
 
-export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQty, onRemove }) {
+export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQty, onRemove, exchangeRate = 1 }) {
   // For this simple version, we assume "Sencillo" size by default and no extras if not handled by a modal.
   // Ideally, when clicking '+', a modal opens. For now, we'll just add it directly or show a modal.
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -60,10 +60,13 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80" />
 
         {/* Price Badge */}
-        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg border border-white/50">
+        <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg border border-white/50 flex flex-col items-start pr-4">
           <p className="font-black text-slate-800 leading-none flex items-baseline gap-1">
             <span className="text-xs text-slate-500 font-bold">$</span>
             {parseFloat(product.price_usd).toFixed(2)}
+          </p>
+          <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+            Bs {(parseFloat(product.price_usd) * exchangeRate).toFixed(2)}
           </p>
         </div>
 
@@ -80,7 +83,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col bg-white">
         <div className="mb-2">
-          <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2">
+          <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-2 capitalize">
             {product.name}
           </h3>
         </div>
