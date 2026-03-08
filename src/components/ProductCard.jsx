@@ -82,9 +82,9 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
 
         {/* Prep Time */}
         {product.prep_time && (
-          <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/30 flex items-center gap-1.5 shadow-sm">
-            <Clock size={12} className="text-white drop-shadow-md" />
-            <span className="text-[11px] font-bold text-white drop-shadow-md">
+          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/50 flex items-center gap-1.5 shadow-sm">
+            <Clock size={12} className="text-slate-600" />
+            <span className="text-[11px] font-black text-slate-700">
               {product.prep_time}m
             </span>
           </div>
