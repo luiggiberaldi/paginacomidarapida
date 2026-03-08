@@ -7,8 +7,9 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const cartItem = cartItems.find((item) => item.id === product.id);
-  const quantityInCart = cartItem ? cartItem.qty : 0;
+  const productCartItems = cartItems.filter((item) => item.id === product.id);
+  const cartItem = productCartItems[0];
+  const quantityInCart = productCartItems.reduce((sum, item) => sum + item.qty, 0);
 
   const hasOptions = (product.sizes?.length > 0) || (product.extras?.length > 0);
 
@@ -126,9 +127,8 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
           </div>
         )}
 
-        {/* Actions */}
         <div className="mt-auto relative z-10 w-full pt-2">
-          {quantityInCart > 0 ? (
+          {quantityInCart > 0 && !hasOptions ? (
             <div className="flex items-center justify-between w-full bg-slate-100 rounded-2xl p-1 shadow-inner border border-slate-200/50">
               <button
                 onClick={handleDecrease}
@@ -152,13 +152,19 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
           ) : (
             <button
               onClick={handleAddClick}
-              className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 font-bold py-3.5 rounded-2xl transition-colors border border-slate-200 hover:border-red-200 group/btn"
+              className={`w-full flex items-center justify-center gap-2 ${quantityInCart > 0 ? "bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"} font-bold py-3.5 rounded-2xl transition-colors border group/btn relative`}
             >
               <Plus
                 size={18}
-                className="transform group-hover/btn:scale-110 transition-transform text-slate-400 group-hover/btn:text-red-500"
+                className={`transform group-hover/btn:scale-110 transition-transform ${quantityInCart > 0 ? "text-red-500" : "text-slate-400 group-hover/btn:text-red-500"}`}
               />
-              Añadir
+              {quantityInCart > 0 ? "Añadir más" : "Añadir"}
+
+              {quantityInCart > 0 && hasOptions && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-white border border-red-200 shadow-sm text-red-600 text-[9px] sm:text-[10px] uppercase font-black px-2 py-1 rounded-lg tracking-wider">
+                  {quantityInCart} EN ORDEN
+                </span>
+              )}
             </button>
           )}
         </div>
