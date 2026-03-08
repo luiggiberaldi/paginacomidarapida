@@ -15,7 +15,7 @@ export function useCart() {
   const addToCart = (
     product,
     qty = 1,
-    size = "Sencillo",
+    size = "",
     selectedExtras = [],
     note = "",
   ) => {
@@ -37,7 +37,7 @@ export function useCart() {
 
       // Calculate item base unit price
       let unitPrice = parseFloat(product.price_usd || 0);
-      if (size && size !== "Sencillo" && product.sizes?.length > 0) {
+      if (size && product.sizes?.length > 0) {
         const foundSize = product.sizes.find(s => s.name === size);
         if (foundSize) {
           unitPrice = getPriceValue(foundSize);

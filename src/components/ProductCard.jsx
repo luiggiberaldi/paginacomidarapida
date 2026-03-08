@@ -5,6 +5,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   // For this simple version, we assume "Sencillo" size by default and no extras if not handled by a modal.
   // Ideally, when clicking '+', a modal opens. For now, we'll just add it directly or show a modal.
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const cartItem = cartItems.find((item) => item.id === product.id);
   const quantityInCart = cartItem ? cartItem.qty : 0;
@@ -81,7 +82,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         </div>
 
         {/* Prep Time */}
-        {product.prep_time && (
+        {product.prep_time && product.prep_time !== "0" && String(product.prep_time).toLowerCase() !== "no aplica" && String(product.prep_time).toLowerCase() !== "n/a" && (
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/50 flex items-center gap-1.5 shadow-sm">
             <Clock size={12} className="text-slate-600" />
             <span className="text-[11px] font-black text-slate-700">
@@ -99,9 +100,30 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         </div>
 
         {product.description && (
-          <p className="text-[13px] text-slate-500 line-clamp-2 leading-relaxed mb-4 flex-1">
-            {product.description}
-          </p>
+          <div className="mb-4 flex-1 flex flex-col items-start">
+            <p
+              onClick={() => {
+                if (product.description.length > 80) setIsExpanded(!isExpanded);
+              }}
+              className={`text-[13px] text-slate-500 leading-relaxed transition-all ${product.description.length > 80 ? "cursor-pointer" : ""
+                } ${isExpanded ? "" : "line-clamp-3"}`}
+              title={!isExpanded ? product.description : ""}
+            >
+              {product.description}
+            </p>
+            {product.description.length > 80 && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="text-[12px] font-black text-red-500 hover:text-red-700 underline mt-1 active:scale-95 transition-transform"
+              >
+                {isExpanded ? "Ver menos" : "Leer más..."}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Actions */}

@@ -20,7 +20,7 @@ export default function ProductOptionsModal({
             if (product.sizes?.length > 0) {
                 setSelectedSize(product.sizes[0].name);
             } else {
-                setSelectedSize("Sencillo"); // Fallback standard size
+                setSelectedSize(""); // Fallback empty
             }
             setSelectedExtras([]);
             setQty(1);
@@ -110,7 +110,7 @@ export default function ProductOptionsModal({
                             {product.name}
                         </h2>
                         {product.description && (
-                            <p className="text-sm text-white/90 line-clamp-2 mt-1 drop-shadow-sm font-medium">
+                            <p className="text-sm text-white/90 line-clamp-4 mt-1 drop-shadow-sm font-medium" title={product.description}>
                                 {product.description}
                             </p>
                         )}
@@ -219,12 +219,12 @@ export default function ProductOptionsModal({
                     {/* Notes */}
                     <div className="space-y-2 pt-2">
                         <h3 className="font-bold text-slate-800">
-                            Instrucciones Especiales
+                            Instrucciones para este plato
                         </h3>
                         <textarea
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            placeholder="Ej: sin cebolla, extra salsa de ajo, etc."
+                            placeholder="Ej: Sin cebolla, carne bien cocida, extra salsa de ajo..."
                             rows={2}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-shadow resize-none"
                         />

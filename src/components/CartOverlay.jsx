@@ -197,7 +197,6 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                         <h4 className="font-bold text-slate-800 dark:text-slate-200 text-[15px] leading-tight line-clamp-2">
                           {item.name}{" "}
                           {item.size &&
-                            item.size !== "Sencillo" &&
                             `[${item.size}]`}
                         </h4>
                         <button
@@ -370,12 +369,18 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    Notas Adicionales (Opcional)
+                    {deliveryType === "DELIVERY"
+                      ? "Indicaciones para el Delivery (Opcional)"
+                      : "Notas Generales del Pedido"}
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Ej. Sin cebolla, extra salsa..."
+                    placeholder={
+                      deliveryType === "DELIVERY"
+                        ? "Ej: Timbre dañado, casa rejas negras, billete de 20$..."
+                        : "Ej: Traer la comida rápido, necesito envoltorio, etc."
+                    }
                     rows="2"
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all resize-none shadow-sm"
                   />
