@@ -75,7 +75,7 @@ export default function ProductOptionsModal({
 
     return (
         <div
-            className={`fixed inset-0 z-50 overflow-hidden flex items-end sm:items-center justify-center ${!isOpen ? "pointer-events-none" : ""
+            className={`fixed inset-0 z-50 overflow-clip flex items-end sm:items-center justify-center ${!isOpen ? "pointer-events-none" : ""
                 }`}
         >
             {/* Backdrop */}

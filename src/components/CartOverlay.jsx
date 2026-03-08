@@ -94,7 +94,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 overflow-hidden ${!isOpen ? 'pointer-events-none' : ''}`}>
+    <div className={`fixed inset-0 z-50 overflow-clip ${!isOpen ? 'pointer-events-none' : ''}`}>
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
