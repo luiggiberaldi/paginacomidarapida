@@ -152,17 +152,19 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
           ) : (
             <button
               onClick={handleAddClick}
-              className={`w-full flex items-center justify-center gap-2 ${quantityInCart > 0 ? "bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"} font-bold py-3.5 rounded-2xl transition-colors border group/btn relative`}
+              className={`w-full flex items-center ${quantityInCart > 0 ? "justify-between px-2 sm:px-3 bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "justify-center gap-2 px-4 bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"} font-bold py-3.5 rounded-2xl transition-colors border group/btn flex-nowrap`}
             >
-              <Plus
-                size={18}
-                className={`transform group-hover/btn:scale-110 transition-transform ${quantityInCart > 0 ? "text-red-500" : "text-slate-400 group-hover/btn:text-red-500"}`}
-              />
-              {quantityInCart > 0 ? "Añadir más" : "Añadir"}
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center sm:justify-start">
+                <Plus
+                  size={18}
+                  className={`shrink-0 transform group-hover/btn:scale-110 transition-transform ${quantityInCart > 0 ? "text-red-500" : "text-slate-400 group-hover/btn:text-red-500"}`}
+                />
+                <span className="truncate text-sm sm:text-base">Añadir</span>
+              </div>
 
               {quantityInCart > 0 && hasOptions && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-white border border-red-200 shadow-sm text-red-600 text-[9px] sm:text-[10px] uppercase font-black px-2 py-1 rounded-lg tracking-wider">
-                  {quantityInCart} EN ORDEN
+                <span className="bg-white border border-red-200 shadow-sm text-red-600 text-[9px] sm:text-[10px] uppercase font-black px-1.5 py-1 rounded-md tracking-wider shrink-0 whitespace-nowrap ml-1">
+                  {quantityInCart} <span className="hidden min-[380px]:inline">EN ORDEN</span>
                 </span>
               )}
             </button>
