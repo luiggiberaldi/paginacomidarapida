@@ -103,22 +103,22 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
           <div className="mb-4 flex-1 flex flex-col items-start">
             <p
               onClick={() => {
-                if (product.description.length > 80) setIsExpanded(!isExpanded);
+                if (product.description.length > 130) setIsExpanded(!isExpanded);
               }}
-              className={`text-[13px] text-slate-500 leading-relaxed transition-all ${product.description.length > 80 ? "cursor-pointer" : ""
+              className={`text-[13px] text-slate-500 leading-relaxed transition-all ${product.description.length > 130 ? "cursor-pointer" : ""
                 } ${isExpanded ? "" : "line-clamp-3"}`}
               title={!isExpanded ? product.description : ""}
             >
               {product.description}
             </p>
-            {product.description.length > 80 && (
+            {product.description.length > 130 && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsExpanded(!isExpanded);
                 }}
-                className="text-[12px] font-black text-red-500 hover:text-red-700 underline mt-1 active:scale-95 transition-transform"
+                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 mt-1 active:scale-95 transition-transform"
               >
                 {isExpanded ? "Ver menos" : "Leer más..."}
               </button>
