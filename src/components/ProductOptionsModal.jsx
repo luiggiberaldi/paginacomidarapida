@@ -130,16 +130,17 @@ export default function ProductOptionsModal({
                                 {product.sizes.map((size, idx) => (
                                     <label
                                         key={idx}
+                                        onClick={() => setSelectedSize(size.name)}
                                         className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${selectedSize === size.name
-                                                ? "border-red-500 bg-red-50/50"
-                                                : "border-slate-100 bg-white hover:border-slate-200"
+                                            ? "border-red-500 bg-red-50/50"
+                                            : "border-slate-100 bg-white hover:border-slate-200"
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div
                                                 className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${selectedSize === size.name
-                                                        ? "border-red-500"
-                                                        : "border-slate-300"
+                                                    ? "border-red-500"
+                                                    : "border-slate-300"
                                                     }`}
                                             >
                                                 {selectedSize === size.name && (
@@ -148,8 +149,8 @@ export default function ProductOptionsModal({
                                             </div>
                                             <span
                                                 className={`font-bold capitalize ${selectedSize === size.name
-                                                        ? "text-red-900"
-                                                        : "text-slate-700"
+                                                    ? "text-red-900"
+                                                    : "text-slate-700"
                                                     }`}
                                             >
                                                 {size.name}
@@ -181,17 +182,17 @@ export default function ProductOptionsModal({
                                     return (
                                         <label
                                             key={idx}
+                                            onClick={() => handleToggleExtra(extra)}
                                             className={`flex items-center justify-between p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${isSelected
-                                                    ? "border-emerald-500 bg-emerald-50/50"
-                                                    : "border-slate-100 bg-white hover:border-slate-200"
+                                                ? "border-emerald-500 bg-emerald-50/50"
+                                                : "border-slate-100 bg-white hover:border-slate-200"
                                                 }`}
-                                            onChange={() => handleToggleExtra(extra)}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected
-                                                            ? "bg-emerald-500 border-emerald-500"
-                                                            : "border-slate-300 bg-white"
+                                                        ? "bg-emerald-500 border-emerald-500"
+                                                        : "border-slate-300 bg-white"
                                                         }`}
                                                 >
                                                     {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
