@@ -5,12 +5,15 @@ import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
 import ProductCard from "./components/ProductCard";
 import CartOverlay from "./components/CartOverlay";
+import ProductOptionsModal from "./components/ProductOptionsModal";
 import BurgerHero from "./components/BurgerHero";
 
 function StorePage() {
   const { slug } = useParams();
   const [activeCategory, setActiveCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOptionProduct, setSelectedOptionProduct] = useState(null);
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const categoryRefs = useRef({});
 
   useEffect(() => {
@@ -114,6 +117,11 @@ function StorePage() {
       const offsetPosition = elementPosition + window.scrollY - headerOffset;
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
     }
+  };
+
+  const handleOpenOptionsModal = (product) => {
+    setSelectedOptionProduct(product);
+    setIsOptionsModalOpen(true);
   };
 
   return (
@@ -238,6 +246,7 @@ function StorePage() {
                         onUpdateQty={cartHooks.updateQty}
                         onRemove={cartHooks.removeFromCart}
                         exchangeRate={config.exchange_rate || 1}
+                        onOptionsClick={handleOpenOptionsModal}
                       />
                     ))}
                   </div>
@@ -247,6 +256,19 @@ function StorePage() {
           )}
         </div>
       </main>
+
+      <ProductOptionsModal
+        isOpen={isOptionsModalOpen}
+        onClose={() => {
+          setIsOptionsModalOpen(false);
+          setSelectedOptionProduct(null);
+        }}
+        product={selectedOptionProduct}
+        onAddToCart={(product, qty, size, selectedExtras, note) => {
+          cartHooks.addToCart(product, qty, size, selectedExtras, note);
+        }}
+        exchangeRate={config.exchange_rate || 1}
+      />
 
       <CartOverlay
         isOpen={isCartOpen}

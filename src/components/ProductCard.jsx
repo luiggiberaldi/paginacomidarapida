@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Plus, Minus, Clock, Info } from "lucide-react";
 
-export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQty, onRemove, exchangeRate = 1 }) {
+export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQty, onRemove, exchangeRate = 1, onOptionsClick }) {
   // For this simple version, we assume "Sencillo" size by default and no extras if not handled by a modal.
   // Ideally, when clicking '+', a modal opens. For now, we'll just add it directly or show a modal.
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -9,10 +9,16 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   const cartItem = cartItems.find((item) => item.id === product.id);
   const quantityInCart = cartItem ? cartItem.qty : 0;
 
+  const hasOptions = (product.sizes?.length > 0) || (product.extras?.length > 0);
+
   const handleAddClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onAdd(product);
+    if (hasOptions && onOptionsClick) {
+      onOptionsClick(product);
+    } else {
+      onAdd(product);
+    }
   };
 
   const handleIncrease = (e) => {
@@ -22,7 +28,11 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
       const targetId = cartItem.cartId || cartItem.id;
       onUpdateQty(targetId, 1);
     } else {
-      onAdd(product);
+      if (hasOptions && onOptionsClick) {
+        onOptionsClick(product);
+      } else {
+        onAdd(product);
+      }
     }
   };
 

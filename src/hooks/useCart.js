@@ -33,8 +33,14 @@ export function useCart() {
           item.extrasKey === extrasKey,
       );
 
-      // Calculate item unit price
+      // Calculate item base unit price
       let unitPrice = product.price_usd;
+      if (size && size !== "Sencillo" && product.sizes?.length > 0) {
+        const foundSize = product.sizes.find(s => s.name === size);
+        if (foundSize && foundSize.price) {
+          unitPrice = parseFloat(foundSize.price);
+        }
+      }
 
       // Add extras price
       if (selectedExtras && selectedExtras.length > 0) {
