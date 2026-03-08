@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
-export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
+export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exchangeRate = 1 }) {
   const { cart, removeFromCart, updateQty, updateNote, clearCart, cartTotal, cartCount } =
     cartHooks;
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
@@ -238,9 +238,14 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
                       )}
                     </div>
                     <div className="flex items-center justify-between mt-3">
-                      <p className="font-black text-red-600 dark:text-red-400">
-                        ${parseFloat(item.priceUsd).toFixed(2)}
-                      </p>
+                      <div>
+                        <p className="font-black text-red-600 dark:text-red-400 leading-none mb-0.5">
+                          ${parseFloat(item.priceUsd).toFixed(2)}
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-400">
+                          Bs {(parseFloat(item.priceUsd) * exchangeRate).toFixed(2)}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                         <button
                           onClick={() => updateQty(item.cartId, -1)}
@@ -378,9 +383,14 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId }) {
           <div className="p-6 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)] z-10 pb-8 sm:pb-6">
             <div className="flex justify-between items-center mb-4">
               <span className="text-slate-500 font-bold">Total a pagar</span>
-              <span className="text-3xl font-black text-slate-800">
-                ${cartTotal.toFixed(2)}
-              </span>
+              <div className="text-right">
+                <span className="block text-3xl font-black text-slate-800 leading-none mb-1">
+                  ${cartTotal.toFixed(2)}
+                </span>
+                <span className="block text-sm font-bold text-slate-400">
+                  Bs {(cartTotal * exchangeRate).toFixed(2)}
+                </span>
+              </div>
             </div>
 
             {view === "cart" ? (

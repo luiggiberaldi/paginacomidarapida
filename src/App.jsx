@@ -63,6 +63,18 @@ function StorePage() {
     "extras"
   ];
 
+  const CATEGORY_LABELS = {
+    "hamburguesas": "Hamburguesas",
+    "perros": "Perros Calientes",
+    "combos": "Combos",
+    "bebidas": "Bebidas",
+    "extras": "Extras",
+    "postres": "Postres",
+    "raciones": "Raciones",
+    "pepitos": "Pepitos",
+    "arepas": "Arepas"
+  };
+
   const categoryOrder = Object.keys(categoriesMap).sort((a, b) => {
     const idxA = PWA_CATEGORY_ORDER.indexOf(a.toLowerCase());
     const idxB = PWA_CATEGORY_ORDER.indexOf(b.toLowerCase());
@@ -157,7 +169,7 @@ function StorePage() {
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                   >
-                    {cat}
+                    {CATEGORY_LABELS[cat.toLowerCase()] || cat}
                   </button>
                 ))}
               </div>
@@ -214,7 +226,7 @@ function StorePage() {
                   className="scroll-mt-36" // Offset para el sticky header
                 >
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-6 flex items-center capitalize">
-                    {category}
+                    {CATEGORY_LABELS[category.toLowerCase()] || category}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {categoriesMap[category].map((product) => (
@@ -241,6 +253,7 @@ function StorePage() {
         onClose={() => setIsCartOpen(false)}
         cartHooks={cartHooks}
         tenantId={config.tenant_id}
+        exchangeRate={config.exchange_rate || 1}
       />
 
       {/* Floating Action Button for Mobile Cart */}
