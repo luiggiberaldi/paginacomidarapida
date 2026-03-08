@@ -13,15 +13,33 @@ export default function ProductOptionsModal({
     const [qty, setQty] = useState(1);
     const [note, setNote] = useState("");
 
-    // Generar array unificado de tamaños (Base + Adicionales)
-    // Generar array unificado de tamaños (Base + Adicionales) solo si existen tamaños explícitamente registrados
-    const combinedSizes = product?.sizes && product.sizes.length > 0 ? [
-        {
-            name: product.baseSizeName || "Normal",
-            price: parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0)
-        },
-        ...product.sizes
-    ] : [];
+    // Filtramos el tamaño base 'Normal' si se detecta que el pricing es engañoso o ya cubierto
+    const combinedSizes = (() => {
+        if (!product?.sizes || product.sizes.length === 0) return [];
+
+        const basePrice = parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0);
+        // Si web_catalog fue publicado con el tamaño base inyectado, a menudo tendrá id: 'base'
+        const hasBaseInjected = product.sizes.some(s => s.id === "base");
+
+        if (hasBaseInjected) {
+            const baseItem = product.sizes.find(s => s.id === "base");
+            const otherSizes = product.sizes.filter(s => s.id !== "base");
+
+            const getPriceValue = (obj) => parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
+            const sizeHasBasePrice = otherSizes.some(s => getPriceValue(s) === basePrice);
+            const userSetBaseName = baseItem.name !== "Normal" && baseItem.name.trim() !== "";
+
+            if (!userSetBaseName && sizeHasBasePrice) {
+                return otherSizes; // Removemos 'Normal' por ser redundante
+            }
+            return product.sizes;
+        } else {
+            // Caso donde el producto viene sin id base, pero queremos evaluar si inyectamos
+            // el Base Size, porque tal vez viene plano de alguna base de datos limpia.
+            // Para Web, el nuevo PublishWebModal envía la lista lista. Solo retornamos.
+            return product.sizes;
+        }
+    })();
 
     // Reset state when product changes or modal opens
     useEffect(() => {
