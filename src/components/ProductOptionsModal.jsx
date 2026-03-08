@@ -30,19 +30,21 @@ export default function ProductOptionsModal({
 
     if (!isOpen || !product) return null;
 
+    const getPriceValue = (obj) =>
+        parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
+
     // Calculate base price from size or product default
-    const basePrice =
-        product.sizes?.find((s) => s.name === selectedSize)?.price ||
-        product.price_usd;
+    const sizeObj = product.sizes?.find((s) => s.name === selectedSize);
+    const basePrice = sizeObj ? getPriceValue(sizeObj) : parseFloat(product.price_usd || 0);
 
     // Calculate extras total
     const extrasTotal = selectedExtras.reduce(
-        (sum, extra) => sum + (parseFloat(extra.price) || 0),
+        (sum, extra) => sum + getPriceValue(extra),
         0
     );
 
     // Calculate final unit price and total price
-    const unitPrice = parseFloat(basePrice) + extrasTotal;
+    const unitPrice = basePrice + extrasTotal;
     const totalPrice = unitPrice * qty;
     const totalPriceBs = totalPrice * exchangeRate;
 
@@ -157,7 +159,7 @@ export default function ProductOptionsModal({
                                             </span>
                                         </div>
                                         <span className="font-bold text-slate-500">
-                                            ${parseFloat(size.price).toFixed(2)}
+                                            ${getPriceValue(size).toFixed(2)}
                                         </span>
                                     </label>
                                 ))}
@@ -205,7 +207,7 @@ export default function ProductOptionsModal({
                                                 </span>
                                             </div>
                                             <span className="font-bold text-slate-500">
-                                                +${parseFloat(extra.price).toFixed(2)}
+                                                +${getPriceValue(extra).toFixed(2)}
                                             </span>
                                         </label>
                                     );

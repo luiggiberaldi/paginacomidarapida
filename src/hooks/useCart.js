@@ -33,19 +33,21 @@ export function useCart() {
           item.extrasKey === extrasKey,
       );
 
+      const getPriceValue = (obj) => parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
+
       // Calculate item base unit price
-      let unitPrice = product.price_usd;
+      let unitPrice = parseFloat(product.price_usd || 0);
       if (size && size !== "Sencillo" && product.sizes?.length > 0) {
         const foundSize = product.sizes.find(s => s.name === size);
-        if (foundSize && foundSize.price) {
-          unitPrice = parseFloat(foundSize.price);
+        if (foundSize) {
+          unitPrice = getPriceValue(foundSize);
         }
       }
 
       // Add extras price
       if (selectedExtras && selectedExtras.length > 0) {
         const extrasTotal = selectedExtras.reduce(
-          (sum, ext) => sum + (parseFloat(ext.price) || 0),
+          (sum, ext) => sum + getPriceValue(ext),
           0,
         );
         unitPrice += extrasTotal;
