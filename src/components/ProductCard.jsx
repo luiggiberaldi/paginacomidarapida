@@ -152,20 +152,22 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
           ) : (
             <button
               onClick={handleAddClick}
-              className={`w-full flex items-center ${quantityInCart > 0 ? "justify-between px-2 sm:px-3 bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "justify-center gap-2 px-4 bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"} font-bold py-3.5 rounded-2xl transition-colors border group/btn flex-nowrap`}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl transition-colors border group/btn relative font-bold ${quantityInCart > 0 ? "bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"}`}
             >
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-center sm:justify-start">
+              <div className="flex items-center gap-1.5 justify-center">
                 <Plus
                   size={18}
                   className={`shrink-0 transform group-hover/btn:scale-110 transition-transform ${quantityInCart > 0 ? "text-red-500" : "text-slate-400 group-hover/btn:text-red-500"}`}
                 />
-                <span className="truncate text-sm sm:text-base">Añadir</span>
-              </div>
-
-              {quantityInCart > 0 && hasOptions && (
-                <span className="bg-white border border-red-200 shadow-sm text-red-600 text-[9px] sm:text-[10px] uppercase font-black px-1.5 py-1 rounded-md tracking-wider shrink-0 whitespace-nowrap ml-1">
-                  {quantityInCart} <span className="hidden min-[380px]:inline">EN ORDEN</span>
+                <span className="text-sm sm:text-base whitespace-nowrap">
+                  Añadir
                 </span>
+              </div>
+              
+              {quantityInCart > 0 && hasOptions && (
+                 <span className="absolute -top-2.5 -right-2.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white shadow-sm border-2 border-white dark:border-slate-900">
+                   {quantityInCart}
+                 </span>
               )}
             </button>
           )}
