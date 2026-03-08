@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
-import { ShoppingCart, Flame, UtensilsCrossed, Store, Search, ChevronLeft } from "lucide-react";
+import { ShoppingCart, Flame, UtensilsCrossed, Store, Search, ChevronLeft, LayoutGrid, Beef, Sandwich, Package, CupSoda, CircleFadingPlus, IceCream, Box, Hash, HandPlatter } from "lucide-react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
 import ProductCard from "./components/ProductCard";
@@ -76,6 +76,19 @@ function StorePage() {
     "raciones": "Raciones",
     "pepitos": "Pepitos",
     "arepas": "Arepas"
+  };
+
+  const CATEGORY_ICONS = {
+    "hamburguesas": Beef,
+    "perros": Sandwich,
+    "combos": Package,
+    "bebidas": CupSoda,
+    "extras": CircleFadingPlus,
+    "postres": IceCream,
+    "raciones": Hash,
+    "pepitos": Sandwich,
+    "arepas": HandPlatter,
+    "otros": Box
   };
 
   const categoryOrder = Object.keys(categoriesMap).sort((a, b) => {
@@ -168,18 +181,22 @@ function StorePage() {
             {/* Sticky Categories Bar */}
             {!loading && !notFound && categoryOrder.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-                {categoryOrder.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => scrollToCategory(`category-${cat}`)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 capitalize ${activeCategory === `category-${cat}`
-                      ? "bg-slate-900 text-white shadow-md transform scale-105"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                  >
-                    {CATEGORY_LABELS[cat.toLowerCase()] || cat}
-                  </button>
-                ))}
+                {categoryOrder.map((cat) => {
+                  const Icon = CATEGORY_ICONS[cat.toLowerCase()] || LayoutGrid;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => scrollToCategory(`category-${cat}`)}
+                      className={`whitespace-nowrap flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 capitalize ${activeCategory === `category-${cat}`
+                        ? "bg-slate-900 text-white shadow-md transform scale-105"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                    >
+                      <Icon size={16} strokeWidth={2} />
+                      {CATEGORY_LABELS[cat.toLowerCase()] || cat}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
