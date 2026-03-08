@@ -25,20 +25,6 @@ function StorePage() {
   const cartHooks = useCart();
   const { cartCount, isCartOpen, setIsCartOpen } = cartHooks;
 
-  // 404 — Negocio no encontrado
-  if (notFound) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center">
-        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-          <Store size={48} className="text-slate-300" />
-        </div>
-        <h1 className="text-2xl font-black text-slate-700 mb-2">Negocio no encontrado</h1>
-        <p className="text-slate-500 max-w-xs">
-          El enlace que usaste no corresponde a ningún negocio registrado. Verifica el link o contacta al vendedor.
-        </p>
-      </div>
-    );
-  }
 
   const filteredCatalog = catalog.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,6 +122,21 @@ function StorePage() {
     setSelectedOptionProduct(product);
     setIsOptionsModalOpen(true);
   };
+
+  // 404 — Negocio no encontrado
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center">
+        <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+          <Store size={48} className="text-slate-300" />
+        </div>
+        <h1 className="text-2xl font-black text-slate-700 mb-2">Negocio no encontrado</h1>
+        <p className="text-slate-500 max-w-xs">
+          El enlace que usaste no corresponde a ningún negocio registrado. Verifica el link o contacta al vendedor.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300">

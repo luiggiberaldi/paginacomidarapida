@@ -29,7 +29,7 @@ export function useCatalog(slug) {
           .from("web_config")
           .select("*")
           .eq("slug", slug)
-          .single();
+          .maybeSingle();
 
         if (configError || !configData) {
           setNotFound(true);

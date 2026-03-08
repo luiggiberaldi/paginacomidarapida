@@ -13,12 +13,21 @@ export default function ProductOptionsModal({
     const [qty, setQty] = useState(1);
     const [note, setNote] = useState("");
 
+    // Generar array unificado de tamaños (Base + Adicionales)
+    const combinedSizes = product?.sizes?.length > 0 ? [
+        {
+            name: product.baseSizeName || "Normal",
+            price: parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0)
+        },
+        ...product.sizes
+    ] : [];
+
     // Reset state when product changes or modal opens
     useEffect(() => {
         if (isOpen && product) {
             // Auto-select first size if available, or fallback
-            if (product.sizes?.length > 0) {
-                setSelectedSize(product.sizes[0].name);
+            if (combinedSizes.length > 0) {
+                setSelectedSize(combinedSizes[0].name);
             } else {
                 setSelectedSize(""); // Fallback empty
             }
@@ -34,8 +43,8 @@ export default function ProductOptionsModal({
         parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
 
     // Calculate base price from size or product default
-    const sizeObj = product.sizes?.find((s) => s.name === selectedSize);
-    const basePrice = sizeObj ? getPriceValue(sizeObj) : parseFloat(product.price_usd || 0);
+    const sizeObj = combinedSizes.find((s) => s.name === selectedSize);
+    const basePrice = sizeObj ? getPriceValue(sizeObj) : parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0);
 
     // Calculate extras total
     const extrasTotal = selectedExtras.reduce(
@@ -120,7 +129,7 @@ export default function ProductOptionsModal({
                 {/* Scrollable Body */}
                 <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-hide">
                     {/* Sizes Selection */}
-                    {product.sizes?.length > 0 && (
+                    {combinedSizes.length > 0 && (
                         <div className="space-y-3">
                             <h3 className="font-bold text-slate-800 text-lg flex items-center justify-between">
                                 <span>Elige el tamaño</span>
@@ -129,7 +138,7 @@ export default function ProductOptionsModal({
                                 </span>
                             </h3>
                             <div className="space-y-2">
-                                {product.sizes.map((size, idx) => (
+                                {combinedSizes.map((size, idx) => (
                                     <label
                                         key={idx}
                                         onClick={() => setSelectedSize(size.name)}
