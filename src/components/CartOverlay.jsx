@@ -167,6 +167,13 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
 
           {view === "cart" && cart.length > 0 && (
             <div className="space-y-4">
+              {/* Instructions Info Banner */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-4 py-3 rounded-2xl flex items-start gap-3 border border-blue-100 dark:border-blue-900/50">
+                <span className="text-lg leading-none mt-0.5">💡</span>
+                <p className="text-xs sm:text-sm font-medium leading-relaxed">
+                  Toca <strong className="font-bold">✏️ Añadir instrucciones</strong> debajo de tu producto si necesitas personalizarlo (ej: sin cebolla, extra salsa, etc).
+                </p>
+              </div>
               {cart.map((item) => (
                 <div
                   key={item.cartId}
