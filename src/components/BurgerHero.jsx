@@ -11,8 +11,7 @@ export default function BurgerHero() {
                 muted
                 loop
                 playsInline
-                preload="none"
-                poster="/logo_principal.png"
+                preload="auto"
             />
 
             {/* Overlay */}
