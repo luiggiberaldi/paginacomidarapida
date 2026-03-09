@@ -402,37 +402,39 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                   </div>
                 </div>
 
-                <div className="animate-reveal space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Dirección de Entrega
-                  </label>
-                  <textarea
-                    required
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Urb. El Pinar, Calle 4, Casa #12..."
-                    rows="2"
-                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    disabled={isLocating}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                  >
-                    {isLocating ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Obteniendo GPS...
-                      </>
-                    ) : (
-                      <>
-                        <MapPin size={16} />
-                        Usar mi ubicación actual
-                      </>
-                    )}
-                  </button>
-                </div>
+                {deliveryType === "DELIVERY" && (
+                  <div className="animate-reveal space-y-2">
+                    <label className="block text-sm font-bold text-slate-700">
+                      Dirección de Entrega
+                    </label>
+                    <textarea
+                      required
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Urb. El Pinar, Calle 4, Casa #12..."
+                      rows="2"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isLocating}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                    >
+                      {isLocating ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          Obteniendo GPS...
+                        </>
+                      ) : (
+                        <>
+                          <MapPin size={16} />
+                          Usar mi ubicación actual
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
