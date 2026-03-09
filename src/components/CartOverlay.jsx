@@ -19,7 +19,6 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [locationProgress, setLocationProgress] = useState("");
   const [expandedNotes, setExpandedNotes] = useState({}); // { [cartId]: boolean }
 
   // Form state
@@ -53,80 +52,33 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
     }
 
     setIsLocating(true);
-    setLocationProgress("Encendiendo GPS...");
-
-    let watcherId = null;
-    let fallbackTimeoutId = null;
-    let bestPosition = null;
-
-    // Función para manejar el éxito de finalizar la búsqueda
-    const finalizeLocation = (position) => {
-      if (watcherId !== null) navigator.geolocation.clearWatch(watcherId);
-      if (fallbackTimeoutId !== null) clearTimeout(fallbackTimeoutId);
-
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const accuracy = Math.round(position.coords.accuracy);
-      const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
-
-      setAddress((prev) => {
-        // Remove previous generic GPS links if they exist so we don't append multiple times
-        let cleanPrev = prev ? prev.replace(/Ubicación GPS: https:\/\/maps\.google\.com\/\?q=[^\s]+[\r\n]?/gi, "")
-          .replace(/\(Precisión aprox: [0-9]+m\)/gi, "")
-          .replace(/\(Por favor añade referencias del lugar\)/gi, "").trim() : "";
-
-        let header = cleanPrev ? `${cleanPrev}\n\n` : "";
-        let newAddress = `${header}Ubicación GPS: ${mapsLink}\n(Precisión aprox: ${accuracy}m)\n(Por favor añade referencias del lugar)`;
-        return newAddress;
-      });
-
-      setIsLocating(false);
-      setLocationProgress("");
-    };
-
-    // Encender el GPS y observar cómo mejora la precisión
-    watcherId = navigator.geolocation.watchPosition(
+    navigator.geolocation.getCurrentPosition(
       (position) => {
-        const accuracy = position.coords.accuracy;
-        bestPosition = position;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
 
-        // Si el teléfono capta la ubicación con precisión muy quirúrgica (<25 metros)
-        if (accuracy <= 25) {
-          finalizeLocation(position);
-        } else {
-          setLocationProgress(`Mejorando precisión (${Math.round(accuracy)}m)...`);
-        }
+        setAddress((prev) => {
+          let cleanPrev = prev ? prev.replace(/Ubicación GPS: https:\/\/maps\.google\.com\/\?q=[^\s]+[\r\n]?/gi, "")
+            .replace(/\(Precisión aprox: [0-9]+m\)/gi, "")
+            .replace(/\(Por favor añade referencias del lugar\)/gi, "").trim() : "";
+
+          let header = cleanPrev ? `${cleanPrev}\n\n` : "";
+          const newAddress = `${header}Ubicación GPS: ${mapsLink}\n(Por favor añade referencias del lugar)`;
+          return newAddress;
+        });
+        setIsLocating(false);
       },
       (error) => {
-        if (watcherId !== null) navigator.geolocation.clearWatch(watcherId);
-        if (fallbackTimeoutId !== null) clearTimeout(fallbackTimeoutId);
         setIsLocating(false);
-        setLocationProgress("");
-
-        let errorMsg = "No se pudo obtener la ubicación exacta.";
-        if (error.code === 1) errorMsg = "Permiso de ubicación denegado. Revisa tu navegador.";
-        else if (error.code === 2) errorMsg = "Ubicación GPS no disponible en este dispositivo.";
-        else if (error.code === 3) errorMsg = "Tiempo de espera agotado al encender GPS.";
+        let errorMsg = "No se pudo obtener la ubicación.";
+        if (error.code === 1) errorMsg = "Permiso de ubicación denegado.";
+        else if (error.code === 2) errorMsg = "Ubicación no disponible.";
+        else if (error.code === 3) errorMsg = "Tiempo de espera agotado al obtener ubicación.";
         alert(errorMsg);
       },
-      {
-        enableHighAccuracy: true, // EXTREMADAMENTE IMPORTANTE PARA FORZAR EL CHIP GPS
-        timeout: 15000,
-        maximumAge: 0 // NO usar caché antigua
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-
-    // Timeout de seguridad: Si no logra precisión quirúrgica en 15 segundos, usamos lo mejor que consiguió
-    fallbackTimeoutId = setTimeout(() => {
-      if (watcherId !== null) navigator.geolocation.clearWatch(watcherId);
-      if (bestPosition) {
-        finalizeLocation(bestPosition);
-      } else {
-        setIsLocating(false);
-        setLocationProgress("");
-        alert("El GPS tardó demasiado en encender. Por favor, intenta de nuevo afuera o cerca de una ventana.");
-      }
-    }, 15000);
   };
 
   const handleSubmitOrder = async (e) => {
@@ -476,16 +428,19 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                     >
                       {isLocating ? (
                         <>
-                          <Loader2 size={16} className="animate-spin shrink-0" />
-                          <span className="truncate">{locationProgress || "Obteniendo GPS..."}</span>
+                          <Loader2 size={16} className="animate-spin" />
+                          Obteniendo GPS...
                         </>
                       ) : (
                         <>
-                          <MapPin size={16} shrink-0 />
-                          <span className="truncate">Localizar con Alta Precisión</span>
+                          <MapPin size={16} />
+                          Usar mi ubicación actual
                         </>
                       )}
                     </button>
+                    <p className="text-[11px] font-bold text-slate-500 text-center !mt-1">
+                      Para mayor precisión en la entrega, te recomendamos fijar el GPS desde un teléfono móvil. 📱
+                    </p>
                   </div>
                 )}
 
