@@ -19,6 +19,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [gpsLink, setGpsLink] = useState(null); // URL de maps cuando se captura ubicación
   const [expandedNotes, setExpandedNotes] = useState({}); // { [cartId]: boolean }
 
   // Form state
@@ -34,11 +35,20 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
       const savedName = localStorage.getItem("pad_customer_name");
       const savedPhone = localStorage.getItem("pad_customer_phone");
       const savedAddress = localStorage.getItem("pad_customer_address");
+      const savedGps = localStorage.getItem("pad_customer_gps");
       if (savedName) setName(savedName);
       if (savedPhone) setPhone(savedPhone);
       if (savedAddress) setAddress(savedAddress);
+      if (savedGps) setGpsLink(savedGps);
     }
   }, [isOpen]);
+
+  // Limpiar GPS si el usuario regresa a "LOCAL" o "LLEVAR"
+  useEffect(() => {
+    if (deliveryType !== "DELIVERY") {
+      setGpsLink(null);
+    }
+  }, [deliveryType]);
 
   const handleCheckout = () => {
     if (cart.length === 0) return;
@@ -57,16 +67,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
-
-        setAddress((prev) => {
-          let cleanPrev = prev ? prev.replace(/Ubicación GPS: https:\/\/maps\.google\.com\/\?q=[^\s]+[\r\n]?/gi, "")
-            .replace(/\(Precisión aprox: [0-9]+m\)/gi, "")
-            .replace(/\(Por favor añade referencias del lugar\)/gi, "").trim() : "";
-
-          let header = cleanPrev ? `${cleanPrev}\n\n` : "";
-          const newAddress = `${header}Ubicación GPS: ${mapsLink}\n(Por favor añade referencias del lugar)`;
-          return newAddress;
-        });
+        setGpsLink(mapsLink);
         setIsLocating(false);
       },
       (error) => {
@@ -90,11 +91,20 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
       // Guardar datos para próxima compra
       localStorage.setItem("pad_customer_name", name.trim());
       localStorage.setItem("pad_customer_phone", phone.trim());
+
+      let finalAddress = address.trim();
       if (deliveryType === 'DELIVERY') {
-        localStorage.setItem("pad_customer_address", address.trim());
+        localStorage.setItem("pad_customer_address", finalAddress);
+        if (gpsLink) {
+          localStorage.setItem("pad_customer_gps", gpsLink);
+          // Inyectar el GPS crudo al string de la dirección para mandarlo a la PC del negocio
+          finalAddress = `${finalAddress ? finalAddress + "\n\n" : ""}Ubicación GPS: ${gpsLink}`;
+        } else {
+          localStorage.removeItem("pad_customer_gps");
+        }
       }
 
-      let formattedNotes = deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : deliveryType === 'DELIVERY' ? `[DELIVERY] Dir: ${address.trim()}` : '[EN EL LOCAL]';
+      let formattedNotes = deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : deliveryType === 'DELIVERY' ? `[DELIVERY] Dir: ${finalAddress}` : '[EN EL LOCAL]';
       if (notes.trim()) formattedNotes += ` - Notas: ${notes.trim()}`;
 
       const orderPayload = {
@@ -408,39 +418,70 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 </div>
 
                 {deliveryType === "DELIVERY" && (
-                  <div className="animate-reveal space-y-2">
-                    <label className="block text-sm font-bold text-slate-700">
-                      Dirección de Entrega
-                    </label>
-                    <textarea
-                      required
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Urb. El Pinar, Calle 4, Casa #12..."
-                      rows="2"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleGetLocation}
-                      disabled={isLocating}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                    >
-                      {isLocating ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          Obteniendo GPS...
-                        </>
-                      ) : (
-                        <>
-                          <MapPin size={16} />
-                          Usar mi ubicación actual
-                        </>
-                      )}
-                    </button>
-                    <p className="text-[11px] font-bold text-slate-500 text-center !mt-1">
-                      Para mayor precisión en la entrega, te recomendamos fijar el GPS desde un teléfono móvil. 📱
-                    </p>
+                  <div className="animate-reveal space-y-3">
+
+                    {/* Adjunto GPS (Solo cuando existe) */}
+                    {gpsLink ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                            <MapPin size={16} />
+                          </div>
+                          <div>
+                            <p className="font-bold text-emerald-800 text-sm leading-tight">GPS Adjuntado</p>
+                            <p className="text-emerald-600 text-[11px] font-medium leading-none mt-0.5">Ubicación lista para el motorizado.</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setGpsLink(null)}
+                          className="w-8 h-8 rounded-full bg-white border border-emerald-200 text-red-500 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors"
+                          title="Eliminar GPS"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        disabled={isLocating}
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                      >
+                        {isLocating ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Obteniendo GPS...
+                          </>
+                        ) : (
+                          <>
+                            <MapPin size={16} />
+                            Usar mi ubicación actual
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {!gpsLink && (
+                      <p className="text-[11px] font-bold text-slate-500 text-center px-4 leading-tight">
+                        💡 Recomendamos buscar la ubicación desde un teléfono móvil para asegurar la máxima precisión.
+                      </p>
+                    )}
+
+                    <div className="pt-2">
+                      <label className="block text-sm font-bold text-slate-700 mb-1">
+                        {gpsLink ? "Referencias del lugar" : "Dirección de Entrega (Manual)"}
+                      </label>
+                      <textarea
+                        required={!gpsLink} // No la forzamos a requerida si enviaron GPS
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder={gpsLink ? "Ej: Casa de dos pisos, rejas negras, frente a la panadería..." : "Urb. El Pinar, Calle 4, Casa #12..."}
+                        rows="2"
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
+                      />
+                    </div>
+
                   </div>
                 )}
 
