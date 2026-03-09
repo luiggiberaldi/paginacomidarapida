@@ -29,6 +29,7 @@ function StorePage() {
   const [activeCategory, setActiveCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [selectedOptionProduct, setSelectedOptionProduct] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const categoryRefs = useRef({});
