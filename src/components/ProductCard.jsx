@@ -83,7 +83,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         </div>
 
         {/* Prep Time */}
-        {product.prep_time && product.prep_time !== "0" && String(product.prep_time).toLowerCase() !== "no aplica" && String(product.prep_time).toLowerCase() !== "n/a" && (
+        {product.prep_time && product.prep_time !== "0" && String(product.prep_time).toLowerCase() !== "no aplica" && String(product.prep_time).toLowerCase() !== "n/a" && Number(product.prep_time) > 1 && (
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/50 flex items-center gap-1.5 shadow-sm">
             <Clock size={12} className="text-slate-600" />
             <span className="text-[11px] font-black text-slate-700">
@@ -163,11 +163,11 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
                   Añadir
                 </span>
               </div>
-              
+
               {quantityInCart > 0 && hasOptions && (
-                 <span className="absolute -top-2.5 -right-2.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white shadow-sm border-2 border-white dark:border-slate-900">
-                   {quantityInCart}
-                 </span>
+                <span className="absolute -top-2.5 -right-2.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white shadow-sm border-2 border-white dark:border-slate-900">
+                  {quantityInCart}
+                </span>
               )}
             </button>
           )}
