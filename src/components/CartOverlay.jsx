@@ -7,6 +7,7 @@ import {
   ArrowRight,
   UtensilsCrossed,
   Car,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
@@ -120,12 +121,28 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 ? "Resumen y Envío"
                 : "Tu Carrito"}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-1 -mr-2">
+            {view === "cart" && cart.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm("¿Seguro que deseas vaciar tu carrito?")) {
+                    clearCart();
+                  }
+                }}
+                className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-50 active:bg-red-50 rounded-full transition-colors flex items-center justify-center gap-1.5 px-3"
+                title="Vaciar carrito"
+              >
+                <Trash2 size={16} />
+                <span className="text-xs font-bold sm:hidden lg:inline-block">Vaciar</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Body Content based on View */}
