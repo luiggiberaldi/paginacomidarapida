@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
-import { ShoppingCart, Flame, UtensilsCrossed, Store, Search, ChevronLeft, LayoutGrid, Beef, Sandwich, Package, CupSoda, CircleFadingPlus, IceCream, Box, Hash, HandPlatter } from "lucide-react";
+import { BrowserRouter as Router, Routes, Route, useParams, useSearchParams } from "react-router-dom";
+import { ShoppingCart, UtensilsCrossed, Store, Search, LayoutGrid, Beef, Sandwich, Package, CupSoda, CircleFadingPlus, IceCream, Box, Hash, HandPlatter, ShieldCheck, Zap } from "lucide-react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
 import ProductCard from "./components/ProductCard";
@@ -8,15 +8,38 @@ import CartOverlay from "./components/CartOverlay";
 import ProductOptionsModal from "./components/ProductOptionsModal";
 import BurgerHero from "./components/BurgerHero";
 
+// Toast helper component
+const Toast = ({ message, show }) => (
+  <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] transition-all duration-300 ${show ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
+    <div className="bg-slate-800 text-white px-4 py-2.5 rounded-2xl shadow-xl shadow-slate-900/20 font-bold text-sm flex items-center gap-2">
+      <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3} className="w-3 h-3 text-white">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      {message}
+    </div>
+  </div>
+);
+
 function StorePage() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const mesaParam = searchParams.get("mesa");
   const [activeCategory, setActiveCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedOptionProduct, setSelectedOptionProduct] = useState(null);
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
   const categoryRefs = useRef({});
+  const toastTimeoutRef = useRef(null);
+
+  const displayToast = (msg) => {
+    setToastMessage(msg);
+    setShowToast(true);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setShowToast(false), 2500);
+  };
 
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -140,8 +163,16 @@ function StorePage() {
     );
   }
 
+  // Category badging utility: checks if any product in a category is in the cart
+  const hasItemsInCategory = (categoryKey) => {
+    if (!cartHooks.cart || cartHooks.cart.length === 0) return false;
+    const productsInCat = categoriesMap[categoryKey] || [];
+    return productsInCat.some(p => cartHooks.cart.some(cartItem => cartItem.id === p.id));
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300 relative">
+      <Toast message={toastMessage} show={showToast} />
       {/* ─── HEADER PREMIUM ─── */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-[0_4px_30px_rgb(0,0,0,0.03)] border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -190,13 +221,16 @@ function StorePage() {
                     <button
                       key={cat}
                       onClick={() => scrollToCategory(`category-${cat}`)}
-                      className={`whitespace-nowrap flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 capitalize ${activeCategory === `category-${cat}`
+                      className={`whitespace-nowrap flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all duration-300 capitalize relative ${activeCategory === `category-${cat}`
                         ? "bg-slate-900 text-white shadow-md transform scale-105"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                         }`}
                     >
                       <Icon size={16} strokeWidth={2} />
                       {CATEGORY_LABELS[cat.toLowerCase()] || cat}
+                      {hasItemsInCategory(cat) && (
+                        <span className="w-2 h-2 rounded-full bg-red-500 ml-0.5 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+                      )}
                     </button>
                   );
                 })}
@@ -205,6 +239,23 @@ function StorePage() {
           </div>
         </div>
       </header>
+
+      {/* Hero Video */}
+      {!loading && !notFound && <BurgerHero />}
+
+      {/* Trust Bar */}
+      <div className="bg-emerald-50/50 border-b border-emerald-100/50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-center gap-4 sm:gap-8 text-[11px] sm:text-xs font-bold text-emerald-800">
+          <div className="flex items-center gap-1.5 border-r border-emerald-200/50 pr-4 sm:pr-8">
+            <Zap size={14} className="text-emerald-500" />
+            <span>Entrega rápida / Retiro local</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            <span>Precios actualizados a la tasa del día</span>
+          </div>
+        </div>
+      </div>
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
@@ -225,9 +276,27 @@ function StorePage() {
         <div className="w-full min-h-[400px]">
           {/* Menu Catalog */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-              <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-red-500 animate-spin mb-4" />
-              <p className="font-bold">Cargando menú delicioso...</p>
+            <div className="space-y-10 sm:space-y-14">
+              <section>
+                <div className="h-8 w-48 bg-slate-200 animate-pulse rounded-lg mb-6"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {Array.from({ length: 8 }).map((_, idx) => (
+                    <div key={idx} className="bg-white rounded-3xl p-3 border border-slate-100 h-32 flex gap-4 animate-pulse">
+                      <div className="w-24 h-24 bg-slate-100 rounded-2xl shrink-0"></div>
+                      <div className="flex-1 py-1 flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-slate-200 rounded-full w-full"></div>
+                          <div className="h-3 bg-slate-100 rounded-full w-2/3"></div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div className="h-5 bg-slate-200 rounded-lg w-16"></div>
+                          <div className="h-8 w-8 bg-slate-100 rounded-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           ) : catalog.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -242,8 +311,29 @@ function StorePage() {
           ) : (
             <div className="space-y-10 sm:space-y-14">
               {categoryOrder.length === 0 && searchQuery && (
-                <div className="text-center py-10">
-                  <p className="text-slate-500 font-medium">No se encontraron productos para "{searchQuery}"</p>
+                <div className="text-center py-12 px-4 bg-white rounded-3xl border border-slate-100 shadow-sm max-w-2xl mx-auto">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search size={24} className="text-slate-400" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-800 mb-2">
+                    No encontramos "{searchQuery}"
+                  </h3>
+                  <p className="text-slate-500 mb-6">Prueba buscando otra cosa o explora nuestras categorías populares.</p>
+
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {["Hamburguesas", "Combos", "Bebidas", "Postres"].map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setSearchQuery("");
+                          scrollToCategory(`category-${cat.toLowerCase()}`);
+                        }}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-sm transition-colors"
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {categoryOrder.map((category) => (
@@ -261,7 +351,10 @@ function StorePage() {
                       <ProductCard
                         key={product.id}
                         product={product}
-                        onAdd={(p) => cartHooks.addToCart(p)}
+                        onAdd={(p) => {
+                          cartHooks.addToCart(p);
+                          displayToast("Producto agregado al carrito");
+                        }}
                         cartItems={cartHooks.cart}
                         onUpdateQty={cartHooks.updateQty}
                         onRemove={cartHooks.removeFromCart}
@@ -286,6 +379,7 @@ function StorePage() {
         product={selectedOptionProduct}
         onAddToCart={(product, qty, size, selectedExtras, note) => {
           cartHooks.addToCart(product, qty, size, selectedExtras, note);
+          displayToast("Producto agregado al carrito");
         }}
         exchangeRate={config.exchange_rate || 1}
       />
@@ -297,6 +391,7 @@ function StorePage() {
         tenantId={config.tenant_id}
         exchangeRate={config.exchange_rate || 1}
         tableNumberFromUrl={mesaParam}
+        hasDelivery={config.has_delivery !== false}
       />
 
       {/* Floating Action Button for Mobile Cart */}

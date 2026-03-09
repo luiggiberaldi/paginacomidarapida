@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { Plus, Minus, Clock, Info } from "lucide-react";
+import { Plus, Minus, Clock } from "lucide-react";
+import { getPriceUsd } from "../utils/priceHelpers";
 
 export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQty, onRemove, exchangeRate = 1, onOptionsClick }) {
-  // For this simple version, we assume "Sencillo" size by default and no extras if not handled by a modal.
-  // Ideally, when clicking '+', a modal opens. For now, we'll just add it directly or show a modal.
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -12,6 +11,14 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   const quantityInCart = productCartItems.reduce((sum, item) => sum + item.qty, 0);
 
   const hasOptions = (product.sizes?.length > 0) || (product.extras?.length > 0);
+
+  const priceUsd = getPriceUsd(product);
+
+  // Calculate minimum price for "Desde" display if sizes exist
+  const displayPrice = product.sizes?.length > 0
+    ? Math.min(priceUsd, ...product.sizes.map(s => getPriceUsd(s)))
+    : priceUsd;
+  const isDesdePrice = product.sizes?.length > 0;
 
   const handleAddClick = (e) => {
     e.preventDefault();
@@ -52,8 +59,8 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
   };
 
   return (
-    <div className="animate-reveal group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full relative">
-      <div className="relative aspect-[16/10] bg-slate-100 dark:bg-slate-800 overflow-hidden w-full shrink-0">
+    <div className="animate-reveal group bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full relative">
+      <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden w-full shrink-0">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -63,7 +70,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600 bg-slate-50">
+          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-slate-50">
             <span className="text-5xl opacity-50">🍔</span>
           </div>
         )}
@@ -74,11 +81,12 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
         {/* Price Badge */}
         <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg border border-white/50 flex flex-col items-start pr-4">
           <p className="font-black text-slate-800 leading-none flex items-baseline gap-1">
-            <span className="text-xs text-slate-500 font-bold">$</span>
-            {parseFloat(product.price_usd).toFixed(2)}
+            {isDesdePrice && <span className="text-[10px] text-slate-500 font-bold mr-0.5 uppercase tracking-wider">Desde</span>}
+            <span className="text-xs text-slate-500 font-bold mr-0.5">$</span>
+            {displayPrice.toFixed(2)}
           </p>
           <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
-            Bs {(parseFloat(product.price_usd) * exchangeRate).toFixed(2)}
+            Bs {(displayPrice * exchangeRate).toFixed(2)}
           </p>
         </div>
 
@@ -121,7 +129,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
                 }}
                 className="text-[11px] font-bold text-slate-400 hover:text-slate-600 mt-1 active:scale-95 transition-transform"
               >
-                {isExpanded ? "Ver menos" : "Leer más..."}
+                {isExpanded ? "Ver menos" : "Leer mas..."}
               </button>
             )}
           </div>
@@ -133,6 +141,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
               <button
                 onClick={handleDecrease}
                 className="w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 bg-white rounded-xl shadow-sm hover:shadow-md transition-all active:scale-95 border border-slate-200 shrink-0"
+                aria-label="Reducir cantidad"
               >
                 <Minus size={18} />
               </button>
@@ -145,6 +154,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
               <button
                 onClick={handleIncrease}
                 className="w-10 h-10 flex items-center justify-center text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-md shadow-red-500/30 transition-all active:scale-95 shrink-0"
+                aria-label="Aumentar cantidad"
               >
                 <Plus size={18} />
               </button>
@@ -153,6 +163,7 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
             <button
               onClick={handleAddClick}
               className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl transition-colors border group/btn relative font-bold ${quantityInCart > 0 ? "bg-red-50 hover:bg-red-100 text-red-600 border-red-200" : "bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-600 border-slate-200 hover:border-red-200"}`}
+              aria-label={`Anadir ${product.name} al carrito`}
             >
               <div className="flex items-center gap-1.5 justify-center">
                 <Plus
@@ -160,12 +171,12 @@ export default function ProductCard({ product, onAdd, cartItems = [], onUpdateQt
                   className={`shrink-0 transform group-hover/btn:scale-110 transition-transform ${quantityInCart > 0 ? "text-red-500" : "text-slate-400 group-hover/btn:text-red-500"}`}
                 />
                 <span className="text-sm sm:text-base whitespace-nowrap">
-                  Añadir
+                  {hasOptions ? "Elegir opciones" : "Añadir"}
                 </span>
               </div>
 
               {quantityInCart > 0 && hasOptions && (
-                <span className="absolute -top-2.5 -right-2.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white shadow-sm border-2 border-white dark:border-slate-900">
+                <span className="absolute -top-2.5 -right-2.5 flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white shadow-sm border-2 border-white">
                   {quantityInCart}
                 </span>
               )}

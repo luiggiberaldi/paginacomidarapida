@@ -8,6 +8,7 @@ export function useCatalog(slug) {
     is_open: true,
     whatsapp_number: "",
     tenant_id: null,
+    exchange_rate: 1,
   });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -20,6 +21,24 @@ export function useCatalog(slug) {
     }
 
     let catalogSub;
+
+    const fetchCatalog = async (tenantId) => {
+      try {
+        const { data: catalogData } = await supabase
+          .from("web_catalog")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("is_available", true)
+          .order("category", { ascending: true })
+          .order("name", { ascending: true });
+
+        if (catalogData) {
+          setCatalog(catalogData);
+        }
+      } catch (err) {
+        console.error("Error refrescando catalogo:", err);
+      }
+    };
 
     const init = async () => {
       setLoading(true);
@@ -37,21 +56,15 @@ export function useCatalog(slug) {
           return;
         }
 
-        setConfig(configData);
+        // Ensure exchange_rate always has a safe default
+        setConfig({
+          ...configData,
+          exchange_rate: configData.exchange_rate || 1,
+        });
         const tenantId = configData.tenant_id;
 
         // 2. Fetch catalog filtered by tenant
-        const { data: catalogData } = await supabase
-          .from("web_catalog")
-          .select("*")
-          .eq("tenant_id", tenantId)
-          .eq("is_available", true)
-          .order("category", { ascending: true })
-          .order("name", { ascending: true });
-
-        if (catalogData) {
-          setCatalog(catalogData);
-        }
+        await fetchCatalog(tenantId);
 
         // 3. Subscribe to realtime changes filtered by tenant
         catalogSub = supabase
@@ -74,20 +87,6 @@ export function useCatalog(slug) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
-      }
-    };
-
-    const fetchCatalog = async (tenantId) => {
-      const { data: catalogData } = await supabase
-        .from("web_catalog")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .eq("is_available", true)
-        .order("category", { ascending: true })
-        .order("name", { ascending: true });
-
-      if (catalogData) {
-        setCatalog(catalogData);
       }
     };
 

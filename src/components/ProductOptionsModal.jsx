@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Plus, Minus, Check } from "lucide-react";
+import { getPriceUsd } from "../utils/priceHelpers";
 
 export default function ProductOptionsModal({
     isOpen,
@@ -13,61 +14,51 @@ export default function ProductOptionsModal({
     const [qty, setQty] = useState(1);
     const [note, setNote] = useState("");
 
-    // Filtramos el tamaño base 'Normal' si se detecta que el pricing es engañoso o ya cubierto
-    const combinedSizes = (() => {
+    // Filter out redundant "Normal" base size if already covered by other sizes
+    const combinedSizes = useMemo(() => {
         if (!product?.sizes || product.sizes.length === 0) return [];
 
-        const basePrice = parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0);
-        // Si web_catalog fue publicado con el tamaño base inyectado, a menudo tendrá id: 'base'
+        const basePrice = getPriceUsd(product);
         const hasBaseInjected = product.sizes.some(s => s.id === "base");
 
         if (hasBaseInjected) {
             const baseItem = product.sizes.find(s => s.id === "base");
             const otherSizes = product.sizes.filter(s => s.id !== "base");
 
-            const getPriceValue = (obj) => parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
-            const sizeHasBasePrice = otherSizes.some(s => getPriceValue(s) === basePrice);
+            const sizeHasBasePrice = otherSizes.some(s => getPriceUsd(s) === basePrice);
             const userSetBaseName = baseItem.name !== "Normal" && baseItem.name.trim() !== "";
 
             if (!userSetBaseName && sizeHasBasePrice) {
-                return otherSizes; // Removemos 'Normal' por ser redundante
+                return otherSizes;
             }
             return product.sizes;
-        } else {
-            // Caso donde el producto viene sin id base, pero queremos evaluar si inyectamos
-            // el Base Size, porque tal vez viene plano de alguna base de datos limpia.
-            // Para Web, el nuevo PublishWebModal envía la lista lista. Solo retornamos.
-            return product.sizes;
         }
-    })();
+        return product.sizes;
+    }, [product]);
 
     // Reset state when product changes or modal opens
     useEffect(() => {
         if (isOpen && product) {
-            // Auto-select first size if available, or fallback
             if (combinedSizes.length > 0) {
                 setSelectedSize(combinedSizes[0].name);
             } else {
-                setSelectedSize(""); // Fallback empty
+                setSelectedSize("");
             }
             setSelectedExtras([]);
             setQty(1);
             setNote("");
         }
-    }, [isOpen, product]);
+    }, [isOpen, product, combinedSizes]);
 
     if (!isOpen || !product) return null;
 
-    const getPriceValue = (obj) =>
-        parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
-
     // Calculate base price from size or product default
     const sizeObj = combinedSizes.find((s) => s.name === selectedSize);
-    const basePrice = sizeObj ? getPriceValue(sizeObj) : parseFloat(product.priceUsdt || product.priceUsd || product.price_usd || product.price || 0);
+    const basePrice = sizeObj ? getPriceUsd(sizeObj) : getPriceUsd(product);
 
     // Calculate extras total
     const extrasTotal = selectedExtras.reduce(
-        (sum, extra) => sum + getPriceValue(extra),
+        (sum, extra) => sum + getPriceUsd(extra),
         0
     );
 
@@ -128,6 +119,7 @@ export default function ProductOptionsModal({
                     <button
                         onClick={onClose}
                         className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-black/40 hover:bg-black/60 backdrop-blur-md text-white rounded-full transition-colors"
+                        aria-label="Cerrar opciones"
                     >
                         <X size={20} />
                     </button>
@@ -151,12 +143,12 @@ export default function ProductOptionsModal({
                     {combinedSizes.length > 0 && (
                         <div className="space-y-3">
                             <h3 className="font-bold text-slate-800 text-lg flex items-center justify-between">
-                                <span>Elige el tamaño</span>
+                                <span>Elige el tamano</span>
                                 <span className="text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-1 rounded-md">
                                     Requerido
                                 </span>
                             </h3>
-                            <div className="space-y-2">
+                            <div className="space-y-2" role="radiogroup" aria-label="Tamano del producto">
                                 {combinedSizes.map((size, idx) => (
                                     <label
                                         key={idx}
@@ -187,7 +179,7 @@ export default function ProductOptionsModal({
                                             </span>
                                         </div>
                                         <span className="font-bold text-slate-500">
-                                            ${getPriceValue(size).toFixed(2)}
+                                            ${getPriceUsd(size).toFixed(2)}
                                         </span>
                                     </label>
                                 ))}
@@ -235,7 +227,7 @@ export default function ProductOptionsModal({
                                                 </span>
                                             </div>
                                             <span className="font-bold text-slate-500">
-                                                +${getPriceValue(extra).toFixed(2)}
+                                                +${getPriceUsd(extra).toFixed(2)}
                                             </span>
                                         </label>
                                     );
@@ -246,10 +238,11 @@ export default function ProductOptionsModal({
 
                     {/* Notes */}
                     <div className="space-y-2 pt-2">
-                        <h3 className="font-bold text-slate-800">
+                        <label htmlFor="product-note" className="font-bold text-slate-800">
                             Instrucciones para este plato
-                        </h3>
+                        </label>
                         <textarea
+                            id="product-note"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
                             placeholder="Ej: Sin cebolla, carne bien cocida, extra salsa de ajo..."
@@ -265,6 +258,7 @@ export default function ProductOptionsModal({
                             <button
                                 onClick={() => setQty((q) => Math.max(1, q - 1))}
                                 className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-600 hover:text-red-500 transition-colors active:scale-95"
+                                aria-label="Reducir cantidad"
                             >
                                 <Minus size={18} strokeWidth={2.5} />
                             </button>
@@ -274,6 +268,7 @@ export default function ProductOptionsModal({
                             <button
                                 onClick={() => setQty((q) => q + 1)}
                                 className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-slate-600 hover:text-emerald-500 transition-colors active:scale-95"
+                                aria-label="Aumentar cantidad"
                             >
                                 <Plus size={18} strokeWidth={2.5} />
                             </button>
@@ -283,6 +278,15 @@ export default function ProductOptionsModal({
 
                 {/* Footer / Add to Cart Action */}
                 <div className="p-4 sm:p-5 bg-white border-t border-slate-100 shrink-0 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+                    {/* Live Summary */}
+                    <div className="flex justify-between items-center mb-3 px-1">
+                        <span className="text-xs font-bold text-slate-500">Resumen:</span>
+                        <span className="text-xs font-black text-slate-700">
+                            {qty}x {selectedSize?.name || "Normal"}
+                            {selectedExtras.length > 0 ? ` • ${selectedExtras.length} extra${selectedExtras.length > 1 ? 's' : ''}` : ''}
+                        </span>
+                    </div>
+
                     <button
                         onClick={handleAddToCart}
                         className="w-full flex items-center justify-between py-4 px-6 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-red-500/25 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 group"

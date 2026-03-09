@@ -1,15 +1,31 @@
 import { useState, useEffect, useMemo } from "react";
+import { getPriceUsd } from "../utils/priceHelpers";
 
-export function useCart() {
-  const [cart, setCart] = useState(() => {
+/** Safe localStorage read */
+function readCartFromStorage() {
+  try {
     const saved = localStorage.getItem("web_cart");
     return saved ? JSON.parse(saved) : [];
-  });
+  } catch {
+    return [];
+  }
+}
 
+/** Safe localStorage write */
+function writeCartToStorage(cart) {
+  try {
+    localStorage.setItem("web_cart", JSON.stringify(cart));
+  } catch {
+    // Silently fail (private browsing, quota exceeded)
+  }
+}
+
+export function useCart() {
+  const [cart, setCart] = useState(readCartFromStorage);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("web_cart", JSON.stringify(cart));
+    writeCartToStorage(cart);
   }, [cart]);
 
   const addToCart = (
@@ -33,21 +49,19 @@ export function useCart() {
           item.extrasKey === extrasKey,
       );
 
-      const getPriceValue = (obj) => parseFloat(obj?.priceUsdt || obj?.priceUsd || obj?.price_usd || obj?.price || 0);
-
       // Calculate item base unit price
-      let unitPrice = parseFloat(product.price_usd || 0);
+      let unitPrice = getPriceUsd(product);
       if (size && product.sizes?.length > 0) {
         const foundSize = product.sizes.find(s => s.name === size);
         if (foundSize) {
-          unitPrice = getPriceValue(foundSize);
+          unitPrice = getPriceUsd(foundSize);
         }
       }
 
       // Add extras price
       if (selectedExtras && selectedExtras.length > 0) {
         const extrasTotal = selectedExtras.reduce(
-          (sum, ext) => sum + getPriceValue(ext),
+          (sum, ext) => sum + getPriceUsd(ext),
           0,
         );
         unitPrice += extrasTotal;
@@ -71,7 +85,7 @@ export function useCart() {
           id: product.id,
           name: product.name,
           priceUsd: unitPrice,
-          basePrice: product.price_usd,
+          basePrice: getPriceUsd(product),
           qty,
           size,
           selectedExtras,
@@ -81,8 +95,6 @@ export function useCart() {
         },
       ];
     });
-
-    // Auto open cart occasionally, or just highlight it. We highlight via a toast or animation usually.
   };
 
   const removeFromCart = (cartId) => {

@@ -13,30 +13,41 @@ import {
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
-export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exchangeRate = 1, tableNumberFromUrl }) {
+/** Safe localStorage helper */
+function safeGetItem(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function safeSetItem(key, value) {
+  try { localStorage.setItem(key, value); } catch { /* private browsing */ }
+}
+function safeRemoveItem(key) {
+  try { localStorage.removeItem(key); } catch { /* private browsing */ }
+}
+
+export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exchangeRate = 1, tableNumberFromUrl, hasDelivery = true }) {
   const { cart, removeFromCart, updateQty, updateNote, clearCart, cartTotal, cartCount } =
     cartHooks;
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [gpsLink, setGpsLink] = useState(null); // URL de maps cuando se captura ubicación
-  const [expandedNotes, setExpandedNotes] = useState({}); // { [cartId]: boolean }
+  const [gpsLink, setGpsLink] = useState(null);
+  const [expandedNotes, setExpandedNotes] = useState({});
 
   // Form state
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryType, setDeliveryType] = useState("LOCAL"); // 'LOCAL' | 'LLEVAR' | 'DELIVERY'
+  const [deliveryType, setDeliveryType] = useState("LOCAL");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
   const [tableNumber, setTableNumber] = useState(null);
 
-  // Cargar datos guardados del cliente al abrir el modal (Fricción Cero)
+  // Load saved customer data (Zero Friction)
   useEffect(() => {
     if (isOpen) {
-      const savedName = localStorage.getItem("pad_customer_name");
-      const savedPhone = localStorage.getItem("pad_customer_phone");
-      const savedAddress = localStorage.getItem("pad_customer_address");
-      const savedGps = localStorage.getItem("pad_customer_gps");
+      const savedName = safeGetItem("pad_customer_name");
+      const savedPhone = safeGetItem("pad_customer_phone");
+      const savedAddress = safeGetItem("pad_customer_address");
+      const savedGps = safeGetItem("pad_customer_gps");
 
       if (savedName) setName(savedName);
       if (savedPhone) setPhone(savedPhone);
@@ -52,7 +63,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
     }
   }, [isOpen, tableNumberFromUrl]);
 
-  // Limpiar GPS si el usuario regresa a "LOCAL" o "LLEVAR"
+  // Clear GPS when switching away from DELIVERY
   useEffect(() => {
     if (deliveryType !== "DELIVERY") {
       setGpsLink(null);
@@ -65,8 +76,8 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   };
 
   const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización.");
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalizacion.");
       return;
     }
 
@@ -81,10 +92,10 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
       },
       (error) => {
         setIsLocating(false);
-        let errorMsg = "No se pudo obtener la ubicación.";
-        if (error.code === 1) errorMsg = "Permiso de ubicación denegado.";
-        else if (error.code === 2) errorMsg = "Ubicación no disponible.";
-        else if (error.code === 3) errorMsg = "Tiempo de espera agotado al obtener ubicación.";
+        let errorMsg = "No se pudo obtener la ubicacion.";
+        if (error.code === 1) errorMsg = "Permiso de ubicacion denegado.";
+        else if (error.code === 2) errorMsg = "Ubicacion no disponible.";
+        else if (error.code === 3) errorMsg = "Tiempo de espera agotado al obtener ubicacion.";
         alert(errorMsg);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -97,19 +108,18 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
 
     setIsSubmitting(true);
     try {
-      // Guardar datos para próxima compra
-      localStorage.setItem("pad_customer_name", name.trim());
-      localStorage.setItem("pad_customer_phone", phone.trim());
+      // Save data for next purchase
+      safeSetItem("pad_customer_name", name.trim());
+      safeSetItem("pad_customer_phone", phone.trim());
 
       let finalAddress = address.trim();
       if (deliveryType === 'DELIVERY') {
-        localStorage.setItem("pad_customer_address", finalAddress);
+        safeSetItem("pad_customer_address", finalAddress);
         if (gpsLink) {
-          localStorage.setItem("pad_customer_gps", gpsLink);
-          // Inyectar el GPS crudo al string de la dirección para mandarlo a la PC del negocio
-          finalAddress = `${finalAddress ? finalAddress + "\n\n" : ""}Ubicación GPS: ${gpsLink}`;
+          safeSetItem("pad_customer_gps", gpsLink);
+          finalAddress = `${finalAddress ? finalAddress + "\n\n" : ""}Ubicacion GPS: ${gpsLink}`;
         } else {
-          localStorage.removeItem("pad_customer_gps");
+          safeRemoveItem("pad_customer_gps");
         }
       }
 
@@ -123,7 +133,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
         customer_notes: formattedNotes,
         items: cart.map(item => ({
           ...item,
-          id: item.local_id || item.id // Enviar el local_id a la cocina si existe
+          id: item.local_id || item.id
         })),
         total_usd: cartTotal,
         status: "pending",
@@ -137,10 +147,9 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
       clearCart();
       setView("success");
 
-      // Optionally close after a few seconds
       setTimeout(() => {
         onClose();
-        setTimeout(() => setView("cart"), 300); // reset after transition
+        setTimeout(() => setView("cart"), 300);
       }, 5000);
     } catch (error) {
       console.error("Error enviando orden:", error);
@@ -151,6 +160,8 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   };
 
   if (!isOpen) return null;
+
+  const isSubmitDisabled = isSubmitting || !name.trim() || !phone.trim() || (deliveryType === 'DELIVERY' && !address.trim() && !gpsLink);
 
   return (
     <div className={`fixed inset-0 z-50 overflow-clip ${!isOpen ? 'pointer-events-none' : ''}`}>
@@ -171,35 +182,73 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-          <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-            {view === "success"
-              ? "¡Orden Enviada!"
-              : view === "checkout"
-                ? "Resumen y Envío"
-                : "Tu Carrito"}
-          </h2>
-          <div className="flex items-center gap-1 -mr-2">
-            {view === "cart" && cart.length > 0 && (
+        <div className="flex flex-col border-b border-slate-100 shrink-0">
+          <div className="flex items-center justify-between px-6 py-4">
+            <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
+              {view === "success"
+                ? "Resumen de la Orden"
+                : view === "checkout"
+                  ? "Datos de Entrega"
+                  : "Tu Carrito"}
+            </h2>
+            <div className="flex items-center gap-1 -mr-2">
+              {view === "cart" && cart.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (typeof window !== "undefined" && window.confirm("¿Seguro que deseas vaciar tu carrito?")) {
+                      clearCart();
+                    }
+                  }}
+                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-50 active:bg-red-50 rounded-full transition-colors flex items-center justify-center gap-1.5 px-3"
+                  aria-label="Vaciar carrito"
+                >
+                  <Trash2 size={16} />
+                  <span className="text-xs font-bold sm:hidden lg:inline-block">Vaciar</span>
+                </button>
+              )}
               <button
-                onClick={() => {
-                  if (window.confirm("¿Seguro que deseas vaciar tu carrito?")) {
-                    clearCart();
-                  }
-                }}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-slate-50 active:bg-red-50 rounded-full transition-colors flex items-center justify-center gap-1.5 px-3"
-                title="Vaciar carrito"
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                aria-label="Cerrar carrito"
               >
-                <Trash2 size={16} />
-                <span className="text-xs font-bold sm:hidden lg:inline-block">Vaciar</span>
+                <X size={24} />
               </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-            >
-              <X size={24} />
-            </button>
+            </div>
+          </div>
+
+          {/* Progress Indicator */}
+          <div className="px-6 pb-4 flex items-center justify-center">
+            <div className="flex items-center w-full max-w-[280px]">
+              {/* Step 1 */}
+              <div className={`flex flex-col items-center gap-1.5 w-1/3 relative z-10 transition-colors duration-300 ${view === 'cart' || view === 'checkout' || view === 'success' ? 'text-slate-800' : 'text-slate-300'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm border-2 transition-all duration-300 ${view === 'cart' || view === 'checkout' || view === 'success' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200'}`}>
+                  1
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Carrito</span>
+              </div>
+
+              {/* Line 1-2 */}
+              <div className={`flex-1 h-0.5 transition-colors duration-500 ${view === 'checkout' || view === 'success' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+
+              {/* Step 2 */}
+              <div className={`flex flex-col items-center gap-1.5 w-1/3 relative z-10 transition-colors duration-300 ${view === 'checkout' || view === 'success' ? 'text-slate-800' : 'text-slate-300'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm border-2 transition-all duration-300 ${view === 'checkout' || view === 'success' ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200'}`}>
+                  2
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Datos</span>
+              </div>
+
+              {/* Line 2-3 */}
+              <div className={`flex-1 h-0.5 transition-colors duration-500 ${view === 'success' ? 'bg-slate-800' : 'bg-slate-200'}`} />
+
+              {/* Step 3 */}
+              <div className={`flex flex-col items-center gap-1.5 w-1/3 relative z-10 transition-colors duration-300 ${view === 'success' ? 'text-emerald-600' : 'text-slate-300'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm border-2 transition-all duration-300 ${view === 'success' ? 'bg-emerald-500 border-emerald-500 text-white shadow-emerald-500/30' : 'bg-white border-slate-200'}`}>
+                  3
+                </div>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Listo</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -207,13 +256,13 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           {view === "success" && (
             <div className="h-full flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 text-green-500 rounded-full flex items-center justify-center mb-4 border-4 border-green-50 dark:border-green-900/10">
+              <div className="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 border-4 border-green-50">
                 <ShoppingBag size={40} className="animate-bounce" />
               </div>
-              <h3 className="text-2xl font-black text-slate-800 dark:text-white">
-                ¡Gracias por tu pedido!
+              <h3 className="text-2xl font-black text-slate-800">
+                Gracias por tu pedido!
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-[250px]">
+              <p className="text-slate-500 max-w-[250px]">
                 Hemos recibido tu orden en cocina. Te escribiremos muy pronto
                 por WhatsApp para confirmar los detalles del pago.
               </p>
@@ -222,20 +271,20 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
 
           {view === "cart" && cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center mb-2">
+              <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-2">
                 <ShoppingBag size={32} />
               </div>
-              <h3 className="text-xl font-bold text-slate-700 dark:text-slate-300">
-                Tu carrito está vacío
+              <h3 className="text-xl font-bold text-slate-700">
+                Tu carrito esta vacio
               </h3>
-              <p className="text-slate-500 dark:text-slate-400">
-                Agrega algunas deliciosas opciones de nuestro menú
+              <p className="text-slate-500">
+                Agrega algunas deliciosas opciones de nuestro menu
               </p>
               <button
                 onClick={onClose}
-                className="mt-6 px-6 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold rounded-xl active:scale-95 transition-all"
+                className="mt-6 px-6 py-3 bg-red-50 text-red-600 font-bold rounded-xl active:scale-95 transition-all"
               >
-                Explorar Menú
+                Explorar Menu
               </button>
             </div>
           )}
@@ -243,16 +292,16 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
           {view === "cart" && cart.length > 0 && (
             <div className="space-y-4">
               {/* Instructions Info Banner */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-4 py-3 rounded-2xl flex items-start gap-3 border border-blue-100 dark:border-blue-900/50">
+              <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-2xl flex items-start gap-3 border border-blue-100">
                 <span className="text-lg leading-none mt-0.5">💡</span>
                 <p className="text-xs sm:text-sm font-medium leading-relaxed">
-                  Toca <strong className="font-bold">✏️ Añadir instrucciones</strong> debajo de tu producto si necesitas personalizarlo (ej: sin cebolla, extra salsa, etc).
+                  Toca <strong className="font-bold">Agregar instrucciones</strong> debajo de tu producto si necesitas personalizarlo (ej: sin cebolla, extra salsa, etc).
                 </p>
               </div>
               {cart.map((item) => (
                 <div
                   key={item.cartId}
-                  className="flex gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-[20px] border border-slate-100 dark:border-slate-800"
+                  className="flex gap-4 p-4 bg-slate-50 rounded-[20px] border border-slate-100"
                 >
                   {item.image ? (
                     <img
@@ -262,14 +311,14 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-[16px] flex items-center justify-center text-slate-400 shrink-0">
+                    <div className="w-20 h-20 bg-slate-200 rounded-[16px] flex items-center justify-center text-slate-400 shrink-0">
                       🍔
                     </div>
                   )}
                   <div className="flex-1 flex flex-col justify-between py-0.5">
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <h4 className="font-bold text-slate-800 dark:text-slate-200 text-[15px] leading-tight line-clamp-2">
+                        <h4 className="font-bold text-slate-800 text-[15px] leading-tight line-clamp-2">
                           {item.name}{" "}
                           {item.size &&
                             `[${item.size}]`}
@@ -277,6 +326,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                         <button
                           onClick={() => removeFromCart(item.cartId)}
                           className="text-slate-300 hover:text-red-500 transition-colors p-1 -mr-2 -mt-1"
+                          aria-label={`Eliminar ${item.name}`}
                         >
                           <X size={16} />
                         </button>
@@ -287,7 +337,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                         </p>
                       )}
 
-                      {/* ── Per-item Note ── */}
+                      {/* Per-item Note */}
                       {expandedNotes[item.cartId] ? (
                         <div className="mt-2">
                           <textarea
@@ -312,7 +362,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                             </span>
                           ) : (
                             <span className="text-[11px] text-slate-400 group-hover:text-amber-500 transition-colors flex items-center gap-1">
-                              <span>✏️</span> Añadir instrucciones
+                              Agregar instrucciones
                             </span>
                           )}
                         </button>
@@ -320,26 +370,28 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                     </div>
                     <div className="flex items-center justify-between mt-3">
                       <div>
-                        <p className="font-black text-red-600 dark:text-red-400 leading-none mb-0.5">
+                        <p className="font-black text-red-600 leading-none mb-0.5">
                           ${parseFloat(item.priceUsd).toFixed(2)}
                         </p>
                         <p className="text-[11px] font-bold text-slate-400">
                           Bs {(parseFloat(item.priceUsd) * exchangeRate).toFixed(2)}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-2 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3 bg-white px-2 py-1.5 rounded-xl shadow-sm border border-slate-200">
                         <button
                           onClick={() => updateQty(item.cartId, -1)}
                           className="text-slate-400 hover:text-red-500 active:scale-90 transition-all"
+                          aria-label="Reducir cantidad"
                         >
                           <Minus size={14} strokeWidth={3} />
                         </button>
-                        <span className="w-4 text-center font-bold text-sm text-slate-700 dark:text-slate-300">
+                        <span className="w-4 text-center font-bold text-sm text-slate-700">
                           {item.qty}
                         </span>
                         <button
                           onClick={() => updateQty(item.cartId, 1)}
                           className="text-slate-400 hover:text-red-500 active:scale-90 transition-all"
+                          aria-label="Aumentar cantidad"
                         >
                           <Plus size={14} strokeWidth={3} />
                         </button>
@@ -362,35 +414,37 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                   Casi listo
                 </h3>
                 <p className="text-sm text-emerald-700/80 leading-relaxed">
-                  Confirma tus datos para enviarte el total en Bolívares por WhatsApp.
+                  Confirma tus datos para enviarte el total en Bolivares por WhatsApp.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  <label htmlFor="checkout-name" className="block text-sm font-bold text-slate-700 mb-2">
                     Tu Nombre
                   </label>
                   <input
+                    id="checkout-name"
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ej. María Sánchez"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 text-slate-800 dark:text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                    placeholder="Ej. Maria Sanchez"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    Teléfono (WhatsApp)
+                  <label htmlFor="checkout-phone" className="block text-sm font-bold text-slate-700 mb-2">
+                    Telefono (WhatsApp)
                   </label>
                   <input
+                    id="checkout-phone"
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0412 123 4567"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3.5 text-slate-800 dark:text-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                   />
                 </div>
 
@@ -407,7 +461,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 ) : (
                   <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Método de Entrega
+                      Metodo de Entrega
                     </label>
                     <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
                       <button
@@ -426,14 +480,16 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                       >
                         Llevar
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeliveryType("DELIVERY")}
-                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "DELIVERY" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"
-                          }`}
-                      >
-                        Delivery
-                      </button>
+                      {hasDelivery && (
+                        <button
+                          type="button"
+                          onClick={() => setDeliveryType("DELIVERY")}
+                          className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "DELIVERY" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"
+                            }`}
+                        >
+                          Delivery
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -441,7 +497,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 {!tableNumberFromUrl && deliveryType === "DELIVERY" && (
                   <div className="animate-reveal space-y-3">
 
-                    {/* Adjunto GPS (Solo cuando existe) */}
+                    {/* GPS Attachment */}
                     {gpsLink ? (
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
                         <div className="flex items-center gap-3">
@@ -450,54 +506,58 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                           </div>
                           <div>
                             <p className="font-bold text-emerald-800 text-sm leading-tight">GPS Adjuntado</p>
-                            <p className="text-emerald-600 text-[11px] font-medium leading-none mt-0.5">Ubicación lista para el motorizado.</p>
+                            <p className="text-emerald-600 text-[11px] font-medium leading-none mt-0.5">Ubicacion lista para el motorizado.</p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => setGpsLink(null)}
                           className="w-8 h-8 rounded-full bg-white border border-emerald-200 text-red-500 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors"
-                          title="Eliminar GPS"
+                          aria-label="Eliminar GPS"
                         >
                           <Trash2 size={14} />
                         </button>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={handleGetLocation}
-                        disabled={isLocating}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-                      >
-                        {isLocating ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" />
-                            Obteniendo GPS...
-                          </>
-                        ) : (
-                          <>
-                            <MapPin size={16} />
-                            Usar mi ubicación actual
-                          </>
-                        )}
-                      </button>
-                    )}
+                      <div className="space-y-3">
+                        <button
+                          type="button"
+                          onClick={handleGetLocation}
+                          disabled={isLocating}
+                          className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
+                        >
+                          {isLocating ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin" />
+                              Obteniendo coordenadas GPS...
+                            </>
+                          ) : (
+                            <>
+                              <MapPin size={18} />
+                              Usar mi ubicación actual
+                            </>
+                          )}
+                        </button>
 
-                    {!gpsLink && (
-                      <p className="text-[11px] font-bold text-slate-500 text-center px-4 leading-tight">
-                        💡 Recomendamos buscar la ubicación desde un teléfono móvil para asegurar la máxima precisión.
-                      </p>
+                        <div className="flex items-start gap-2 px-2">
+                          <ShieldCheck size={14} className="text-slate-400 shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Solo usamos tu ubicación para ayudar al motorizado a encontrarte más rápido. Funciona mejor desde un teléfono móvil.
+                          </p>
+                        </div>
+                      </div>
                     )}
 
                     <div className="pt-2">
-                      <label className="block text-sm font-bold text-slate-700 mb-1">
-                        {gpsLink ? "Referencias del lugar" : "Dirección de Entrega (Manual)"}
+                      <label htmlFor="checkout-address" className="block text-sm font-bold text-slate-700 mb-1">
+                        {gpsLink ? "Referencias del lugar" : "Direccion de Entrega (Manual)"}
                       </label>
                       <textarea
-                        required={!gpsLink} // No la forzamos a requerida si enviaron GPS
+                        id="checkout-address"
+                        required={!gpsLink}
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder={gpsLink ? "Ej: Casa de dos pisos, rejas negras, frente a la panadería..." : "Urb. El Pinar, Calle 4, Casa #12..."}
+                        placeholder={gpsLink ? "Ej: Casa de dos pisos, rejas negras, frente a la panaderia..." : "Urb. El Pinar, Calle 4, Casa #12..."}
                         rows="2"
                         className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
                       />
@@ -507,18 +567,19 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 )}
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  <label htmlFor="checkout-notes" className="block text-sm font-bold text-slate-700 mb-2">
                     {deliveryType === "DELIVERY"
                       ? "Indicaciones para el Delivery (Opcional)"
                       : "Notas Generales del Pedido"}
                   </label>
                   <textarea
+                    id="checkout-notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={
                       deliveryType === "DELIVERY"
-                        ? "Ej: Timbre dañado, casa rejas negras, billete de 20$..."
-                        : "Ej: Traer la comida rápido, necesito envoltorio, etc."
+                        ? "Ej: Timbre danado, casa rejas negras, billete de 20$..."
+                        : "Ej: Traer la comida rapido, necesito envoltorio, etc."
                     }
                     rows="2"
                     className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all resize-none shadow-sm"
@@ -557,7 +618,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                 <button
                   type="submit"
                   form="checkout-form"
-                  disabled={isSubmitting || !name || !phone || (deliveryType === 'DELIVERY' && !address)}
+                  disabled={isSubmitDisabled}
                   className="w-full flex items-center justify-center gap-2 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl shadow-xl shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
                 >
                   {isSubmitting ? (
