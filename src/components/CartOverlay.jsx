@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
-export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exchangeRate = 1 }) {
+export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exchangeRate = 1, tableNumberFromUrl }) {
   const { cart, removeFromCart, updateQty, updateNote, clearCart, cartTotal, cartCount } =
     cartHooks;
   const [view, setView] = useState("cart"); // 'cart' | 'checkout' | 'success'
@@ -28,6 +28,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
   const [deliveryType, setDeliveryType] = useState("LOCAL"); // 'LOCAL' | 'LLEVAR' | 'DELIVERY'
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [tableNumber, setTableNumber] = useState(null);
 
   // Cargar datos guardados del cliente al abrir el modal (Fricción Cero)
   useEffect(() => {
@@ -36,12 +37,20 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
       const savedPhone = localStorage.getItem("pad_customer_phone");
       const savedAddress = localStorage.getItem("pad_customer_address");
       const savedGps = localStorage.getItem("pad_customer_gps");
+
       if (savedName) setName(savedName);
       if (savedPhone) setPhone(savedPhone);
       if (savedAddress) setAddress(savedAddress);
       if (savedGps) setGpsLink(savedGps);
+
+      if (tableNumberFromUrl) {
+        setTableNumber(tableNumberFromUrl);
+        setDeliveryType("LOCAL");
+      } else {
+        setTableNumber(null);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, tableNumberFromUrl]);
 
   // Limpiar GPS si el usuario regresa a "LOCAL" o "LLEVAR"
   useEffect(() => {
@@ -104,7 +113,7 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
         }
       }
 
-      let formattedNotes = deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : deliveryType === 'DELIVERY' ? `[DELIVERY] Dir: ${finalAddress}` : '[EN EL LOCAL]';
+      let formattedNotes = tableNumber ? `[MESA ${tableNumber}]` : (deliveryType === 'LLEVAR' ? '[PARA LLEVAR]' : deliveryType === 'DELIVERY' ? `[DELIVERY] Dir: ${finalAddress}` : '[EN EL LOCAL]');
       if (notes.trim()) formattedNotes += ` - Notas: ${notes.trim()}`;
 
       const orderPayload = {
@@ -385,39 +394,51 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">
-                    Método de Entrega
-                  </label>
-                  <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryType("LOCAL")}
-                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LOCAL" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                    >
-                      Mesa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryType("LLEVAR")}
-                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LLEVAR" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                    >
-                      Llevar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryType("DELIVERY")}
-                      className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "DELIVERY" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                    >
-                      Delivery
-                    </button>
+                {tableNumberFromUrl ? (
+                  <div className="bg-emerald-50 text-emerald-800 px-4 py-3 rounded-xl border border-emerald-100 flex items-center justify-between shadow-sm">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Pedido para</span>
+                      <span className="font-black text-lg">Mesa {tableNumberFromUrl}</span>
+                    </div>
+                    <div className="w-10 h-10 bg-emerald-100/50 rounded-full flex items-center justify-center">
+                      <UtensilsCrossed size={20} className="text-emerald-600" />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">
+                      Método de Entrega
+                    </label>
+                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType("LOCAL")}
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LOCAL" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                      >
+                        Mesa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType("LLEVAR")}
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "LLEVAR" ? "bg-white shadow-sm text-slate-800" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                      >
+                        Llevar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType("DELIVERY")}
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${deliveryType === "DELIVERY" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                      >
+                        Delivery
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                {deliveryType === "DELIVERY" && (
+                {!tableNumberFromUrl && deliveryType === "DELIVERY" && (
                   <div className="animate-reveal space-y-3">
 
                     {/* Adjunto GPS (Solo cuando existe) */}

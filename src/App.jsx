@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Flame, UtensilsCrossed, Store, Search, ChevronLeft, LayoutGrid, Beef, Sandwich, Package, CupSoda, CircleFadingPlus, IceCream, Box, Hash, HandPlatter } from "lucide-react";
 import { useCatalog } from "./hooks/useCatalog";
 import { useCart } from "./hooks/useCart";
@@ -10,6 +10,8 @@ import BurgerHero from "./components/BurgerHero";
 
 function StorePage() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const mesaParam = searchParams.get("mesa");
   const [activeCategory, setActiveCategory] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOptionProduct, setSelectedOptionProduct] = useState(null);
@@ -294,6 +296,7 @@ function StorePage() {
         cartHooks={cartHooks}
         tenantId={config.tenant_id}
         exchangeRate={config.exchange_rate || 1}
+        tableNumberFromUrl={mesaParam}
       />
 
       {/* Floating Action Button for Mobile Cart */}
