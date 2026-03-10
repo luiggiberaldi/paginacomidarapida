@@ -497,73 +497,20 @@ export default function CartOverlay({ cartHooks, isOpen, onClose, tenantId, exch
 
                 {!tableNumberFromUrl && deliveryType === "DELIVERY" && (
                   <div className="animate-reveal space-y-3">
-
-                    {/* GPS Attachment */}
-                    {gpsLink ? (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                            <MapPin size={16} />
-                          </div>
-                          <div>
-                            <p className="font-bold text-emerald-800 text-sm leading-tight">GPS Adjuntado</p>
-                            <p className="text-emerald-600 text-[11px] font-medium leading-none mt-0.5">Ubicacion lista para el motorizado.</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setGpsLink(null)}
-                          className="w-8 h-8 rounded-full bg-white border border-emerald-200 text-red-500 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors"
-                          aria-label="Eliminar GPS"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <button
-                          type="button"
-                          onClick={handleGetLocation}
-                          disabled={isLocating}
-                          className="w-full flex items-center justify-center gap-2 py-3.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-xl font-bold transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
-                        >
-                          {isLocating ? (
-                            <>
-                              <Loader2 size={18} className="animate-spin" />
-                              Obteniendo coordenadas GPS...
-                            </>
-                          ) : (
-                            <>
-                              <MapPin size={18} />
-                              Usar mi ubicación actual
-                            </>
-                          )}
-                        </button>
-
-                        <div className="flex items-start gap-2 px-2">
-                          <ShieldCheck size={14} className="text-slate-400 shrink-0 mt-0.5" />
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Solo usamos tu ubicación para ayudar al motorizado a encontrarte más rápido. Funciona mejor desde un teléfono móvil.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
                     <div className="pt-2">
                       <label htmlFor="checkout-address" className="block text-sm font-bold text-slate-700 mb-1">
-                        {gpsLink ? "Referencias del lugar" : "Direccion de Entrega (Manual)"}
+                        Direccion de Entrega (Manual)
                       </label>
                       <textarea
                         id="checkout-address"
-                        required={!gpsLink}
+                        required
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder={gpsLink ? "Ej: Casa de dos pisos, rejas negras, frente a la panaderia..." : "Urb. El Pinar, Calle 4, Casa #12..."}
+                        placeholder="Urb. El Pinar, Calle 4, Casa #12..."
                         rows="2"
                         className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none shadow-sm"
                       />
                     </div>
-
                   </div>
                 )}
 
