@@ -6,7 +6,7 @@
  */
 export function getPriceUsd(obj) {
     if (!obj) return 0;
-    const raw = obj.priceUsdt ?? obj.priceUsd ?? obj.price_usd ?? obj.price ?? 0;
+    const raw = obj.price_usd ?? obj.priceUsd ?? obj.price ?? 0;
     const parsed = parseFloat(raw);
     return Number.isFinite(parsed) ? parsed : 0;
 }

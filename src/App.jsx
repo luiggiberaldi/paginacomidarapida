@@ -172,7 +172,7 @@ function StorePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300 relative">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative">
       <Toast message={toastMessage} show={showToast} />
       {/* ─── HEADER PREMIUM ─── */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-[0_4px_30px_rgb(0,0,0,0.03)] border-b border-slate-100">

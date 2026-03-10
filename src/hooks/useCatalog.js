@@ -21,6 +21,7 @@ export function useCatalog(slug) {
     }
 
     let catalogSub;
+    let configSub;
 
     const fetchCatalog = async (tenantId) => {
       try {
@@ -66,7 +67,7 @@ export function useCatalog(slug) {
         // 2. Fetch catalog filtered by tenant
         await fetchCatalog(tenantId);
 
-        // 3. Subscribe to realtime changes filtered by tenant
+        // 3. Subscribe to realtime catalog changes filtered by tenant
         catalogSub = supabase
           .channel(`catalog-${tenantId}`)
           .on(
@@ -78,8 +79,30 @@ export function useCatalog(slug) {
               filter: `tenant_id=eq.${tenantId}`,
             },
             () => {
-              // Refresh catalog on any change
               fetchCatalog(tenantId);
+            },
+          )
+          .subscribe();
+
+        // 4. Subscribe to realtime config changes (rate, name, delivery)
+        configSub = supabase
+          .channel(`config-${tenantId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "web_config",
+              filter: `tenant_id=eq.${tenantId}`,
+            },
+            (payload) => {
+              if (payload.new) {
+                setConfig(prev => ({
+                  ...prev,
+                  ...payload.new,
+                  exchange_rate: payload.new.exchange_rate || prev.exchange_rate,
+                }));
+              }
             },
           )
           .subscribe();
@@ -94,6 +117,7 @@ export function useCatalog(slug) {
 
     return () => {
       if (catalogSub) supabase.removeChannel(catalogSub);
+      if (configSub) supabase.removeChannel(configSub);
     };
   }, [slug]);
 

@@ -63,5 +63,5 @@
 }
 
 .glass-header {
-  @apply bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl border-b border-white/20 dark:border-slate-800/50;
+  @apply bg-white/70 backdrop-blur-xl border-b border-white/20;
 }
