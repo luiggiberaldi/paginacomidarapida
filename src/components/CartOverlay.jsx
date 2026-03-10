@@ -9,7 +9,8 @@ import {
   Car,
   Trash2,
   MapPin,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from "lucide-react";
 import { supabase } from "../utils/supabase";
 
